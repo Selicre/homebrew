@@ -141,14 +141,6 @@ incsrc "runframe.asm"
 incsrc "sprites.asm"
 incsrc "hdma.asm"
 
-VBlank2:
-	; Currently on the stack: P register, return address
-	REP #$30			; A, XY 16-bit
-	PLA : PLA
-	SEP #$30			; A, XY 8-bit
-	LDA #$01
-	JMP MainLoop
-
 VBlank:
 	; Currently on the stack: P register, return address
 	REP #$30			; A, XY 16-bit
@@ -174,13 +166,17 @@ VBlank:
 +
 	LDA.w GameRunning
 	BEQ +
+	PHX : PHY
 	SEP #$30
 	LDA $24
 	STA $210F
 	LDA $25
 	STA $210F
 	CLI
-	PLA : PLA : RTI		; Don't update anything if the game is lagging
+	REP #$30
+	PLX : PLY
+	PLA
+	RTI		; Don't update anything if the game is lagging
 	; discard the return address and the flags
 +
 	PLA : PLA : PLA
