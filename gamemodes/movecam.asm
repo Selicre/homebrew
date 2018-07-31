@@ -3,12 +3,17 @@ define Movecam_Speed $80
 
 HexSpriteText:
 	STA.b Scratch+4
+	PHY
 .addScore:
+	LDA.b 1,s
+	TAY
 	LDA.b Scratch+4
 	AND.w #$000F
 	CLC : ADC.w #(%00110111 << 8) + $F0
 	;SEC
+	PHX
 	JSL AddSpriteTile
+	PLX
 	LSR.b Scratch+4
 	LSR.b Scratch+4
 	LSR.b Scratch+4
@@ -18,6 +23,84 @@ HexSpriteText:
 	TAX
 	CPX #$0008
 	BNE .addScore
+	PLY
+	RTS
+
+#[bank(00)]
+SplitIRQ:
+	PHA
+	PHY
+	PHX
+	PHP
+	REP #$20
+	SEP #$10
+	LDA $24		; load layer 2 x pos
+	LSR			; half it
+	TAX
+	STX $210F
+	XBA
+	TAX
+	STX $210F
+	PLP
+	PLX
+	PLY
+	PLA
+	RTI
+
+; is also in bank 0 because lol
+Movecam_Load_Queue:
+	db $01
+	dl Graphics01
+	dw $0000, $4000
+	db $00
+	dl Palette
+	dw $0000, $0080
+	db $00
+	dl Palette
+	dw $0080, $0080
+	db $01
+	dl BGTilemap01
+	dw $4000, $2000
+	db $FF
+
+#[bank(02)]
+GMInit_Movecam:
+	SEP #$30
+	LDA #%10000000	; turn screen off, activate vblank
+	STA.w INIDISP
+	REP #$30
+	LDX.w #Movecam_Load_Queue
+	JSL LoadDataQueue
+	SEP #$30		; turn AXY 8-bit
+
+	LDA #%00000010 ; bg mode 1, 8x8 tiles
+	STA.w BGMODE
+
+	LDA #%01000001	; tilemap at 0x8000, no mirroring
+	STA.w BG1SC
+	LDA #%01001001	; tilemap at 0x9000, no mirroring
+	STA.w BG2SC
+	LDA #%01010001	; tilemap at 0xA000, no mirroring
+	STA.w BG3SC
+
+	LDA #%00010011	; enable BG1-2 + OBJ
+	STA.w TM
+	LDA #%00000011	; enable BG1-2
+	STA.w TS
+	LDA #%00000000
+	STA.w OBSEL
+	LDA #%00001111	; end vblank, setting brightness to 15
+	; Set up IRQ to split the screen in two
+
+	REP #$20
+	LDA #$0030
+	STA.w VTIME
+	LDA.w #SplitIRQ
+	STA.b IRQPtr
+	SEP #$30
+	LDA #%00001111	; end vblank, setting brightness to 15
+	STA.w INIDISP
+	REP #$30
 	RTS
 
 GM_Movecam:
@@ -26,8 +109,7 @@ GM_Movecam:
 	BIT #$0F00				; If no controller buttons are held..
 	BNE +
 	STZ.b Movecam_Speed		; Remove all speed
-	; TODO: fix compiler bug
-+	INC.b $80		; Otherwise, add 1
++	INC.b Movecam_Speed		; Otherwise, add 1
 	;BNE ++
 	LDA.b Movecam_Speed
 	LSR
@@ -75,6 +157,7 @@ GM_Movecam:
 +
 	INC $24
 
+	; Add left/top borders
 	LDA.b CamX
 	CMP #$0000
 	BPL +
@@ -85,7 +168,8 @@ GM_Movecam:
 	BPL +
 	STZ.b CamY
 +
-	;BRA +
+	; Draw the HUD
+	BRA +
 	LDA.w CamX
 	LDX.w #$0028
 	LDY.w #$0010
@@ -105,6 +189,8 @@ GM_Movecam:
 	LDY.w #$0028
 	JSR HexSpriteText
 +
+Thing:
+	; Draw the misc test sprites
 	LDA.w #$0060
 	CLC : SBC.w CamX
 	TAX
@@ -124,24 +210,35 @@ GM_Movecam:
 	LDA.w #(%00110001 << 8) + $8A
 	SEC
 	JSL AddSpriteTile
-	;RTS
-;Lasdqwke:
+	RTS
+	; Draw the test sprite array
+
 	LDY #$0000
 -
 	INY
 	PHY
-	LDA.w #$0060
-	ADC 1,s
-	CLC : SBC.w CamX
+	LDA.w #$0120
+	CLC : ADC 1,s
+	LSR
+	SEC : SBC.w CamX
 	TAX
 	LDA 1,s
 	ASL : ASL
-	CLC : SBC.w CamY
+	CLC : ADC 1,s
+	ASL
+	SEC : SBC.w CamY
 	TAY
-	LDA.w #(%00110001 << 8) + $88
+	LDA 1,s
+	AND.w #%00000011
+	ASL
+	ORA.w #%00100001
+	XBA
+	ORA.w #$0086
 	SEC
 	JSL AddSpriteTile
 	PLY
 	CPY.w CamX
 	BMI -
+
+
 	RTS

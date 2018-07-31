@@ -20,71 +20,29 @@ Start:
 	LDA #$01FF
 	TCS
 
-	BRA +
-.queue
-	db $01
-	dl Graphics01
-	dw $0000, $4000
-	db $00
-	dl Palette
-	dw $0000, $0080
-	db $00
-	dl Palette
-	dw $0080, $0080
-	db $01
-	dl BGTilemap01
-	dw $4000, $2000
-	db $FF
-
-+	LDX.w #.queue
-	JSR LoadDataQueue
-	SEP #$30		; turn AXY 8-bit
-
-	LDA #%00000010 ; bg mode 1, 8x8 tiles
-	STA.w BGMODE
-
-	LDA #%01000001	; tilemap at 0x8000, no mirroring
-	STA.w BG1SC
-	LDA #%01001001	; tilemap at 0x9000, no mirroring
-	STA.w BG2SC
-	LDA #%01010001	; tilemap at 0xA000, no mirroring
-	STA.w BG3SC
-
-	LDA #%00010011	; enable BG1-2 + OBJ
-	STA.w TM
-	LDA #%00000011	; enable BG1-2
-	STA.w TS
-	LDA #%00000000
-	STA.w OBSEL
-
-	REP #$10		; turn XY 16-bit
 	; Clean memory
 	LDX #$0000
 -	INX
 	STZ $00,x
 	CPX #$05FF
 	BNE -
-	
-	;JSR ResetSprites
+	; Set up gamemode
+	LDA #$0080
+	STA.b Gamemode
+	JSR InitSprites
+	JSR ResetSprites
 	;JSR FillSpritesEnd
 
-	; Set up IRQ to split the screen in two
-
-	REP #$20
-	LDA #$0030
-	STA.w VTIME
-	LDA.w #SplitIRQ
-	STA.b IRQPtr
-	SEP #$20
-
+	SEP #$30
 	LDA #%00001111	; end vblank, setting brightness to 15
 	STA.w INIDISP
 
 	LDA #%10100001	; enable NMI, IRQ & joypad
 	STA.w NMITIMEN
 	
-	CLI				; enable interrupts
-	STA $20
+	;CLI				; enable interrupts
+	; What even was this??
+	;STA $20
 	;JMP MainLoop
 
 MainLoop:
@@ -117,29 +75,7 @@ MainLoop:
 -	WAI
 	BRA -
 
-SplitIRQ:
 
-	PHA
-	PHX
-	PHP
-	REP #$20
-	SEP #$10
-	LDA $24		; load layer 2 x pos
-	LSR			; half it
-	TAX
-	STX $210F
-	XBA
-	TAX
-	STX $210F
-	PLP
-	PLX
-	PLA
-	RTI
-
-
-incsrc "runframe.asm"
-incsrc "sprites.asm"
-incsrc "hdma.asm"
 
 VBlank:
 	; Currently on the stack: P register, return address
@@ -174,11 +110,11 @@ VBlank:
 	STA $210F
 	CLI
 	REP #$30
-	PLX : PLY
+	PLY : PLX
 	PLA
 	RTI		; Don't update anything if the game is lagging
-	; discard the return address and the flags
 +
+	; discard the return address and the flags
 	PLA : PLA : PLA
 ++
 	SEP #$30			; A, XY 8-bit
@@ -226,20 +162,20 @@ LoadDataQueue:
 	PHP
 	SEP #$20	; 8-bit A
 .loop:
-	LDA $00,x	; offset $01: command
+	LDA $0000,x	; offset $01: command
 	BMI .end	; if $FF, end
-	LDY $01,x	; A bus address
+	LDY $0001,x	; A bus address
 	STY $4302
-	LDA $03,x
+	LDA $0003,x
 	STA $4304
-	LDY $06,x	; Write size
+	LDY $0006,x	; Write size
 	STY $4305
-	LDY $00,x	; read command again
+	LDY $0000,x	; read command again
 	BEQ .loadCGRAM	; if 0, branch
 	CPY #$0001
 	BEQ .loadVRAM	; if 1, branch
 .loadOAM:
-	LDA $04,x	; B bus address in OAM
+	LDA $0004,x	; B bus address in OAM
 	STA.w OAMADD
 	LDA #%00000000
 	STA $4300	; 1 byte increment
@@ -247,7 +183,7 @@ LoadDataQueue:
 	STA $4301
 	BRA .startDMA
 .loadCGRAM:
-	LDA $04,x	; B bus address in CGRAM
+	LDA $0004,x	; B bus address in CGRAM
 	STA $2121
 	LDA #%00000000
 	STA $4300	; 1 byte increment
@@ -255,7 +191,7 @@ LoadDataQueue:
 	STA $4301
 	BRA .startDMA
 .loadVRAM:
-	LDY $04,x	; B bus address
+	LDY $0004,x	; B bus address
 	STY $2116
 	LDA #$80	; Video port control
 	STA $2115
@@ -276,11 +212,14 @@ LoadDataQueue:
 	PLP
 	PLY
 	PLA
-	RTS
+	RTL
 
 
 BRK:
 -	BRA -
+
+incsrc "sprites.asm"
+incsrc "hdma.asm"
 
 #[bank(01)]
 Graphics01:
@@ -300,3 +239,4 @@ Palette:
 	dw $0000, $7fdd, $0000, $2d6b, $3def, $4e73, $6318, $739c
 	dw $0000, $7fff, $0000, $0320, $347d, $551e, $65ff, $7b1f
 
+incsrc "runframe.asm"
