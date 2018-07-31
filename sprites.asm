@@ -91,8 +91,6 @@ ResetSprites:
 	RTS
 
 FillSpritesEnd:
-	PHP
-	REP #$30	; Turn AXY 16-bit
 	LDX.w SprInputPtr
 	; Fill rest with $E0 (moves just enough offscreen)
 	LDA #$E0E0
@@ -104,16 +102,12 @@ FillSpritesEnd:
 	BMI -
 	LDX.w SprInputPtr
 	STX.w SprInputLastPtr
-	PLP
 	RTS
 
 
 DrawAllSprites:
-	REP #$30
-
 	LDX.w #.queue
 	JSL LoadDataQueue
-	SEP #$30
 	RTS
 .queue
 	db $02

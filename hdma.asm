@@ -48,7 +48,8 @@ db $00
 
 HDMASetup:
 	PHP
-	REP #$20	; 16 bit A
+	REP #$20	; A 16 bit
+	SEP #$10	; XY 8 bit
 	LDY #$02	;
 	STY $4300	;
 	LDY #$0D

@@ -1,4 +1,8 @@
-define Movecam_Speed $80
+define Movecam_Speed 		$80
+define Movecam_CamXStart	$82
+define Movecam_CamYStart	$84
+define Movecam_CamXEnd		$86
+define Movecam_CamYEnd		$88
 
 
 HexSpriteText:
@@ -47,6 +51,7 @@ SplitIRQ:
 	PLA
 	RTI
 
+
 ; is also in bank 0 because lol
 Movecam_Load_Queue:
 	db $01
@@ -66,6 +71,8 @@ Movecam_Load_Queue:
 #[bank(02)]
 GMInit_Movecam:
 	SEP #$30
+	LDA #%00000001	; enable NMI & IRQ
+	STA.w NMITIMEN
 	LDA #%10000000	; turn screen off, activate vblank
 	STA.w INIDISP
 	REP #$30
@@ -89,18 +96,30 @@ GMInit_Movecam:
 	STA.w TS
 	LDA #%00000000
 	STA.w OBSEL
-	LDA #%00001111	; end vblank, setting brightness to 15
 	; Set up IRQ to split the screen in two
 
-	REP #$20
-	LDA #$0030
-	STA.w VTIME
-	LDA.w #SplitIRQ
-	STA.b IRQPtr
+	;REP #$20
+	;LDA #$0030
+	;STA.w VTIME
+	;LDA.w #SplitIRQ
+	;STA.b IRQPtr
 	SEP #$30
 	LDA #%00001111	; end vblank, setting brightness to 15
 	STA.w INIDISP
+	LDA #%10100001	; enable NMI & IRQ
+	STA.w NMITIMEN
 	REP #$30
+	LDA #$0000
+	STA.b Movecam_CamXStart
+	STA.b Movecam_CamYStart
+	LDA #$0380
+	STA.b Movecam_CamXEnd
+	LDA #$0140
+	STA.b Movecam_CamYEnd
+	LDA.w #GMID_Movecam - GamemodePtrs
+	STA.b Gamemode
+	LDA.w #VBlank_SyncCameraValues
+	STA.w RunFrame_VBlank
 	RTS
 
 GM_Movecam:
@@ -157,19 +176,29 @@ GM_Movecam:
 +
 	INC $24
 
-	; Add left/top borders
+	; Add camera borders
 	LDA.b CamX
-	CMP #$0000
+	CMP.b Movecam_CamXStart
 	BPL +
 	STZ.b CamX
 +
 	LDA.b CamY
-	CMP #$0000
+	CMP.b Movecam_CamYStart
 	BPL +
 	STZ.b CamY
 +
+	LDA.b Movecam_CamXEnd
+	CMP.b CamX
+	BPL +
+	STA.b CamX
++
+	LDA.b Movecam_CamYEnd
+	CMP.b CamY
+	BPL +
+	STA.b CamY
++
 	; Draw the HUD
-	BRA +
+	;BRA +
 	LDA.w CamX
 	LDX.w #$0028
 	LDY.w #$0010
@@ -210,7 +239,7 @@ Thing:
 	LDA.w #(%00110001 << 8) + $8A
 	SEC
 	JSL AddSpriteTile
-	RTS
+	;RTS
 	; Draw the test sprite array
 
 	LDY #$0000
@@ -239,6 +268,5 @@ Thing:
 	PLY
 	CPY.w CamX
 	BMI -
-
 
 	RTS

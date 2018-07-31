@@ -33,114 +33,40 @@ Start:
 	JSR ResetSprites
 	;JSR FillSpritesEnd
 
+	LDA.w #VBlank_DoNothingRTI
+	STA.b VBlankPtr
+	STA.b IRQPtr
+
+	LDA.w #VBlank_DoNothing
+	STA.w RunFrame_VBlank
+
 	SEP #$30
 	LDA #%00001111	; end vblank, setting brightness to 15
 	STA.w INIDISP
 
 	LDA #%10100001	; enable NMI, IRQ & joypad
 	STA.w NMITIMEN
-	
+
 	;CLI				; enable interrupts
 	; What even was this??
 	;STA $20
 	;JMP MainLoop
 
 MainLoop:
-	CLI
-	LDA #$01
-	STA.b GameRunning
-	JSR RunFrame
-	STZ.b GameRunning
-	; TODO: decompression queue
-	SEP #$20	; A 8-bit
-	LDA.w SLHV
-	LDA.w STAT78	; reset to low byte
-	LDA.w OPVCT
-	XBA
-	LDA.w OPVCT
-	XBA
-	REP #$20	; A 16-bit
-	AND.w #$01FF
-	STA.b SysLoad
-	SEP #$20	; A 8-bit
-	LDA.w OPHCT
-	XBA
-	LDA.w OPHCT
-	XBA
-	REP #$20	; A 16-bit
-	AND.w #$01FF
-	STA.b SysLoadLo
 	REP #$30
+	JSR RunFrame
+
 ; loop infinitely
 -	WAI
 	BRA -
 
+VBlank_DoNothingRTI:
+	RTI
 
 
 VBlank:
-	; Currently on the stack: P register, return address
-	REP #$30			; A, XY 16-bit
-	PHA
-	LDA.w DecQRunning
-	BEQ +
-	; Direct page here must be $0002
-	PLA
-	STA.b DecQSavedA
-	STX.b DecQSavedX
-	STY.b DecQSavedY
-	SEP #$20			; A 8-bit
-	PLA
-	STA.b DecQSavedP
-	; TODO: right?
-	PLA
-	STA.b DecQSavedIP
-	PLX
-	STX.b DecQSavedIP+1
-	LDX #0000
-	TCD				; reset direct page
-	BRA ++
-+
-	LDA.w GameRunning
-	BEQ +
-	PHX : PHY
-	SEP #$30
-	LDA $24
-	STA $210F
-	LDA $25
-	STA $210F
-	CLI
-	REP #$30
-	PLY : PLX
-	PLA
-	RTI		; Don't update anything if the game is lagging
-+
-	; discard the return address and the flags
-	PLA : PLA : PLA
-++
-	SEP #$30			; A, XY 8-bit
-	; sync camera scroll values
-	LDA $20
-	STA $210D
-	LDA $21
-	STA $210D
-	LDA $22
-	STA $210E
-	LDA $23
-	STA $210E
-	LDA $24
-	STA $210F
-	LDA $25
-	STA $210F
-	LDA $26
-	STA $2110
-	LDA $27
-	STA $2110
-	JSR DrawAllSprites
+	JMP (VBlankPtr)
 
-	;JSR HDMASetup
-	; finish
-	LDA #$01
-	JMP MainLoop
 
 ; IRQ handler
 
