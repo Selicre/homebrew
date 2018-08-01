@@ -122,7 +122,7 @@ GM_MovecamInit:
 
 GM_Movecam:
 	; Controller stuff
-	LDA $4218
+	LDA.w JOY1
 	BIT #$0F00				; If no controller buttons are held..
 	BNE +
 	STZ.b Movecam_Speed		; Remove all speed
@@ -142,37 +142,36 @@ GM_Movecam:
 	LDA #$FFF0
 +
 	STA $00
-	LDA $4218
+	LDA.w JOY1
 	BIT #$0100				; adjust camera position
 	BEQ +
 	TAX
-	LDA $20
+	LDA.b CamX
 	SEC : ADC $00
-	STA $20
+	STA.b CamX
 	TXA
 +	BIT #$0200
 	BEQ +
 	TAX
-	LDA $20
+	LDA.b CamX
 	CLC : SBC $00
-	STA $20
+	STA.b CamX
 	TXA
 +	BIT #$0400
 	BEQ +
 	TAX
-	LDA $22
+	LDA.b CamY
 	SEC : ADC $00
-	STA $22
+	STA.b CamY
 	TXA
 +	BIT #$0800
 	BEQ +
 	TAX
-	LDA $22
+	LDA.b CamY
 	CLC : SBC $00
-	STA $22
+	STA.b CamY
 	TXA
 +
-	INC $24
 
 	; Add camera borders
 	LDA.b CamX
@@ -195,6 +194,16 @@ GM_Movecam:
 	BPL +
 	STA.b CamY
 +
+
+; Update BG
+	LDA.b CamX
+	LSR : LSR
+	STA.b BGX
+	LDA.b CamY
+	LSR : LSR : LSR : LSR
+	STA.b BGY
+
+
 	; Draw the HUD
 	;BRA +
 	LDA.w CamX
@@ -261,7 +270,9 @@ Thing:
 	SEC
 	JSL AddSpriteTile
 	PLY
+	CPY.w #$0080
+	BPL +
 	CPY.w CamX
 	BMI -
-
++
 	RTS

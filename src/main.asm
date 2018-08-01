@@ -31,7 +31,6 @@ Start:
 	STA.b Gamemode
 	JSR InitSprites
 	JSR ResetSprites
-	;JSR FillSpritesEnd
 
 	LDA.w #VBlank_DoNothingRTI
 	STA.b VBlankPtr
@@ -46,11 +45,6 @@ Start:
 
 	LDA #%10100001	; enable NMI, IRQ & joypad
 	STA.w NMITIMEN
-
-	;CLI				; enable interrupts
-	; What even was this??
-	;STA $20
-	;JMP MainLoop
 
 MainLoop:
 	REP #$30
@@ -150,14 +144,14 @@ incsrc "hdma.asm"
 
 #[bank(01)]
 Graphics01:
-	incbin "graphics.bin"
+	incbin "gfx_level.bin"
 
 BGTilemap01:
-	incbin "map4.bin"
-	incbin "map3.bin"
+	incbin "map_level.bin"
+	incbin "map_bg.bin"
 
 GFXLogo:
-	incbin "logo_fix_better2.bin"
+	incbin "gfx_logo.bin"
 GFXLogoEnd:
 	define GFXLogoSize GFXLogoEnd-GFXLogo
 GFXLogoPal:
@@ -168,7 +162,7 @@ GFXLogoPalEnd:
 
 
 GFXLogoMap:
-	incbin "logomap.bin"
+	incbin "map_logo.bin"
 GFXLogoMapEnd:
 	define GFXLogoMapSize GFXLogoMapEnd-GFXLogoMap
 

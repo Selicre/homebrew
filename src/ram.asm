@@ -43,4 +43,8 @@ define Fade_Source		$0F02		; Fadeout only
 define Fade_Timer		$0F04
 define RunFrame_VBlank	$0F06		; The _actual_ VBlank routine pointer that must end in a JMP MainLoop
 
+define LevelData1		$7EB000		; Level buffers. These contain 32x32 chunks of level, which are reloaded dynamically
+define LevelData2		$7EB400
+define LevelData3		$7EB800
+define LevelData4		$7EBC00
 define VRAMBuffer		$7EC000		; A buffer for VRAM operations, length 0x4000
