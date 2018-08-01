@@ -51,32 +51,31 @@ SplitIRQ:
 	PLA
 	RTI
 
-
 ; is also in bank 0 because lol
-Movecam_Load_Queue:
+Movecam_LoadQueue:
 	db $01
 	dl Graphics01
 	dw $0000, $4000
 	db $00
 	dl Palette
-	dw $0000, $0080
+	dw $0000, $0100
 	db $00
 	dl Palette
-	dw $0080, $0080
+	dw $0080, $0100
 	db $01
 	dl BGTilemap01
 	dw $4000, $2000
 	db $FF
 
 #[bank(02)]
-GMInit_Movecam:
+GM_MovecamInit:
 	SEP #$30
 	LDA #%00000001	; enable NMI & IRQ
 	STA.w NMITIMEN
 	LDA #%10000000	; turn screen off, activate vblank
 	STA.w INIDISP
 	REP #$30
-	LDX.w #Movecam_Load_Queue
+	LDX.w #Movecam_LoadQueue
 	JSL LoadDataQueue
 	SEP #$30		; turn AXY 8-bit
 
@@ -104,8 +103,6 @@ GMInit_Movecam:
 	;LDA.w #SplitIRQ
 	;STA.b IRQPtr
 	SEP #$30
-	LDA #%00001111	; end vblank, setting brightness to 15
-	STA.w INIDISP
 	LDA #%10100001	; enable NMI & IRQ
 	STA.w NMITIMEN
 	REP #$30
@@ -116,11 +113,12 @@ GMInit_Movecam:
 	STA.b Movecam_CamXEnd
 	LDA #$0140
 	STA.b Movecam_CamYEnd
-	LDA.w #GMID_Movecam - GamemodePtrs
+	LDA.w #GMID_Movecam-GamemodePtrs
 	STA.b Gamemode
 	LDA.w #VBlank_SyncCameraValues
 	STA.w RunFrame_VBlank
-	RTS
+	JMP FadeinInit
+	;RTS
 
 GM_Movecam:
 	; Controller stuff
@@ -208,12 +206,10 @@ GM_Movecam:
 	LDY.w #$0018
 	JSR HexSpriteText
 	LDA.w SysLoad
-	AND.w #$00FF
 	LDX.w #$0020
 	LDY.w #$0020
 	JSR HexSpriteText
 	LDA.w SysLoadLo
-	AND.w #$00FF
 	LDX.w #$0020
 	LDY.w #$0028
 	JSR HexSpriteText
@@ -246,23 +242,22 @@ Thing:
 -
 	INY
 	PHY
-	LDA.w #$0120
+	LDA.w #$00A0
 	CLC : ADC 1,s
-	LSR
 	SEC : SBC.w CamX
 	TAX
 	LDA 1,s
 	ASL : ASL
 	CLC : ADC 1,s
-	ASL
+	ASL : ASL
 	SEC : SBC.w CamY
 	TAY
 	LDA 1,s
 	AND.w #%00000011
 	ASL
-	ORA.w #%00100001
+	ORA.w #%00100000
 	XBA
-	ORA.w #$0086
+	ORA.w #$0006
 	SEC
 	JSL AddSpriteTile
 	PLY

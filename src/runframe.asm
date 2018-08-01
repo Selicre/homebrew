@@ -40,8 +40,8 @@ VBlank_SyncCameraValues:
 	LDA $27
 	STA $2110
 	REP #$30
-	;JSR HDMASetup
 	JSR DrawAllSprites
+	JSR HDMASetup
 VBlank_DoNothing:
 	REP #$30
 	PLA : PLA
@@ -53,32 +53,21 @@ RunFrameTrampoline:
 	SEP #$10	; XY 8-bit
 	LDX.b Gamemode
 	REP #$30
-	BPL +
-	JSR (GamemodeInitPtrs-$0080,x)
-	RTL
-+	JSR (GamemodePtrs,x)
+	JSR (GamemodePtrs,x)
 	RTL
 
 GamemodePtrs:
-GMID_Logo:		dw GM_Logo
-GMID_Movecam:	dw GM_Movecam
-GMID_Level:		dw GM_Level
-GMID_Fadein:	dw GM_Fadein
-GMID_Fadeout:	dw GM_Fadeout
-
-GamemodeInitPtrs:
-	dw GMInit_Logo
-	dw GMInit_Movecam
-	dw GMInit_Level
-	dw GMInit_Fadein
-	dw GMInit_Fadeout
-
+GMID_LogoInit:		dw GM_LogoInit
+GMID_Logo:			dw GM_Logo
+GMID_MovecamInit:	dw GM_MovecamInit
+GMID_Movecam:		dw GM_Movecam
+GMID_Level:			dw GM_Level
+GMID_Fadein:		dw GM_Fadein
+GMID_Fadeout:		dw GM_Fadeout
 
 GM_Level:
 	RTS
 
-GMInit_Level:
-	RTS
 
 incsrc "gamemodes/logo.asm"
 incsrc "gamemodes/movecam.asm"

@@ -39,7 +39,8 @@ define SprInputLastPtr	$0526		; Last frame's LoOAM length
 
 ; $0Fxx: misc stuff
 define Fade_Target		$0F00
-define Fade_Timer		$0F02
-define RunFrame_VBlank	$0F04		; The _actual_ VBlank routine pointer that must end in a JMP MainLoop
+define Fade_Source		$0F02		; Fadeout only
+define Fade_Timer		$0F04
+define RunFrame_VBlank	$0F06		; The _actual_ VBlank routine pointer that must end in a JMP MainLoop
 
 define VRAMBuffer		$7EC000		; A buffer for VRAM operations, length 0x4000

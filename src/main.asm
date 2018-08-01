@@ -27,7 +27,7 @@ Start:
 	CPX #$05FF
 	BNE -
 	; Set up gamemode
-	LDA #$0080
+	LDA #$0000
 	STA.b Gamemode
 	JSR InitSprites
 	JSR ResetSprites
@@ -96,11 +96,12 @@ LoadDataQueue:
 	STA $4304
 	LDY $0006,x	; Write size
 	STY $4305
-	LDY $0000,x	; read command again
+	LDA $0000,x	; read command again
 	BEQ .loadCGRAM	; if 0, branch
-	CPY #$0001
+	CMP #$01
 	BEQ .loadVRAM	; if 1, branch
 .loadOAM:
+	; Note: fix pls
 	LDA $0004,x	; B bus address in OAM
 	STA.w OAMADD
 	LDA #%00000000
@@ -155,7 +156,24 @@ BGTilemap01:
 	incbin "map4.bin"
 	incbin "map3.bin"
 
+GFXLogo:
+	incbin "logo_fix_better2.bin"
+GFXLogoEnd:
+	define GFXLogoSize GFXLogoEnd-GFXLogo
+GFXLogoPal:
+	incbin "logo0.pal"
+	incbin "logo1.pal"
+GFXLogoPalEnd:
+	define GFXLogoPalSize GFXLogoPalEnd-GFXLogoPal
+
+
+GFXLogoMap:
+	incbin "logomap.bin"
+GFXLogoMapEnd:
+	define GFXLogoMapSize GFXLogoMapEnd-GFXLogoMap
+
 Palette:
+	incbin "../build/palette.pal"
 	dw $7eee, $7fdd, $0000, $0d71, $13ff, $1e9b, $137f, $03ff
 	dw $0000, $0000, $194f, $3e78, $573e, $03ff, $7bde, $7c1f
 	dw $0000, $7fdd, $0960, $01a4, $01e8, $022c, $0291, $02f5
