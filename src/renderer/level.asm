@@ -65,7 +65,6 @@ DrawStartingTilemap:
 	BEQ .line_loop			; if x = 0, go to next block line
 	; MAIN SHIT HAPPENING HERE
 	; Get block mappings
-	; TODO: make 80+ use subtable pointers
 
 .loop_entry
 	LDA.b (Render_DataPtr)
