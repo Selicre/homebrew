@@ -69,8 +69,8 @@ DrawStartingTilemap:
 
 .loop_entry
 	LDA.b (Render_DataPtr)
-	TAY
 	BMI	.use_subtable
+	TAY
 	REP #$20				; A 16-bit
 	LDA.b [Render_BlkPtrM0],y
 	STA.w VRAMBuffer+$00,x
@@ -86,6 +86,7 @@ DrawStartingTilemap:
 	BRA .tile_loop
 
 .use_subtable
+	TAY
 	REP #$20				; A 16-bit
 	LDA.b [Render_BlkPtrS0],y
 	STA.w VRAMBuffer+$00,x

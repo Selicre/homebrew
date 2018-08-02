@@ -178,3 +178,4 @@ Palette:
 	dw $0000, $7fff, $0000, $0320, $347d, $551e, $65ff, $7b1f
 
 incsrc "runframe.asm"
+incsrc "renderer/level2.asm"

@@ -78,6 +78,9 @@ GM_MovecamInit:
 	LDX.w #Movecam_LoadQueue
 	JSL LoadDataQueue
 	SEP #$30		; turn AXY 8-bit
+	
+	JSL DrawStartingTilemap
+	
 
 	LDA #%00000010 ; bg mode 1, 8x8 tiles
 	STA.w BGMODE
