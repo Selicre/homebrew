@@ -10,7 +10,6 @@ PAL_FILES=$(patsubst palettes/%.png,build/%.pal, $(wildcard palettes/*.png))
 
 
 $(OUTPUT): $(PAL_FILES) $(SOURCE)
-	@echo $(PAL_FILES)
 	cd src; \
 	$(ASM) main.asm ../$(OUTPUT)
 
