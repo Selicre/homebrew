@@ -54,16 +54,16 @@ SplitIRQ:
 ; is also in bank 0 because lol
 Movecam_LoadQueue:
 	db $01
-	dl Graphics01
+	dl GFXLevel
 	dw $0000, $4000
 	db $00
-	dl Palette
-	dw $0000, $0100
+	dl GFXLevelPal
+	dw $0000, $0080
 	db $00
-	dl Palette
-	dw $0080, $0100
+	dl GFXLevelPal
+	dw $0080, $0080
 	db $01
-	dl BGTilemap01
+	dl GFXLevelMap
 	dw $4000, $2000
 	db $FF
 
@@ -74,15 +74,39 @@ GM_MovecamInit:
 	STA.w NMITIMEN
 	LDA #%10000000	; turn screen off, activate vblank
 	STA.w INIDISP
+
+	; Clean level data
 	REP #$30
+	LDA #$0000
+	LDX.w #LevelChunks>>16
+	STX $02
+	LDX.w #LevelChunks
+	STX $00
+-
+	STA [$00]
+	INX #2
+	STX $00
+	CPX.w #LevelChunks + $400
+	BNE -
+
+
 	LDX.w #Movecam_LoadQueue
 	JSL LoadDataQueue
-	SEP #$30		; turn AXY 8-bit
-	
-	JSL DrawStartingTilemap
-	
 
-	LDA #%00000010 ; bg mode 1, 8x8 tiles
+	LDA.w #BlockMappings						; 01 02
+	STA.l LevelMeta
+	LDA.w #BlockMappings<<8|BlockMappings>>16	; 03 01
+	STA.l LevelMeta+2
+	LDA.w #BlockMappings>>8						; 01 02
+	STA.l LevelMeta+4
+	
+	LDA #$0000
+	JSL DrawStartingTilemap
+	JSL UploadBuffer
+
+	SEP #$30		; turn AXY 8-bit
+
+	LDA #%00000001 ; bg mode 1, 8x8 tiles
 	STA.w BGMODE
 
 	LDA #%01000001	; tilemap at 0x8000, no mirroring
@@ -247,7 +271,7 @@ Thing:
 	LDA.w #(%00110001 << 8) + $8A
 	SEC
 	JSL AddSpriteTile
-	;RTS
+	RTS
 	; Draw the test sprite array
 
 	LDY #$0000

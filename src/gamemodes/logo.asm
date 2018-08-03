@@ -25,7 +25,7 @@ GM_LogoInit:
 	JSL LoadDataQueue
 	SEP #$30		; turn AXY 8-bit
 
-	LDA #%00000010 ; bg mode 1, 8x8 tiles
+	LDA #%00000001 ; bg mode 1, 8x8 tiles
 	STA.w BGMODE
 
 	LDA #%01000001	; tilemap at 0x8000, no mirroring

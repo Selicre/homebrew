@@ -142,40 +142,7 @@ BRK:
 incsrc "sprites.asm"
 incsrc "hdma.asm"
 
-#[bank(01)]
-Graphics01:
-	incbin "gfx_level.bin"
-
-BGTilemap01:
-	incbin "map_level.bin"
-	incbin "map_bg.bin"
-
-GFXLogo:
-	incbin "gfx_logo.bin"
-GFXLogoEnd:
-	define GFXLogoSize GFXLogoEnd-GFXLogo
-GFXLogoPal:
-	incbin "logo0.pal"
-	incbin "logo1.pal"
-GFXLogoPalEnd:
-	define GFXLogoPalSize GFXLogoPalEnd-GFXLogoPal
-
-
-GFXLogoMap:
-	incbin "map_logo.bin"
-GFXLogoMapEnd:
-	define GFXLogoMapSize GFXLogoMapEnd-GFXLogoMap
-
-Palette:
-	incbin "../build/palette.pal"
-	dw $7eee, $7fdd, $0000, $0d71, $13ff, $1e9b, $137f, $03ff
-	dw $0000, $0000, $194f, $3e78, $573e, $03ff, $7bde, $7c1f
-	dw $0000, $7fdd, $0960, $01a4, $01e8, $022c, $0291, $02f5
-	dw $7393, $0000, $0cfb, $2feb, $7393, $0000, $7fdd, $2d7f
-	dw $0000, $7fdd, $0000, $0daf, $2e79, $25e0, $2b1c, $0320
-	dw $0000, $7fff, $0000, $0320, $0016, $001f, $017f, $029f
-	dw $0000, $7fdd, $0000, $2d6b, $3def, $4e73, $6318, $739c
-	dw $0000, $7fff, $0000, $0320, $347d, $551e, $65ff, $7b1f
+incsrc "imagedata.asm"
 
 incsrc "runframe.asm"
-incsrc "renderer/level2.asm"
+incsrc "renderer/level.asm"

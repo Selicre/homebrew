@@ -44,7 +44,7 @@ DrawStartingTilemap:
 	LDA #$0000
 	SEP #$20				; A 8-bit
 	REP #$10				; XY 16-bit
-	LDX #$1010
+	LDX #$2010
 	STX.b Render_TileXY		; initialize both to 16 blocks left to draw
 	; init loop counters
 	LDX #$0000
@@ -52,9 +52,14 @@ DrawStartingTilemap:
 
 .line_loop
 	REP #$20				; A 16-bit
-	TXA						; advance the pointer to the next line
-	CLC : ADC.w #$40
-	TAX
+	TXA
+	;CLC : ADC.w #$40
+	EOR #$0840				; switch tilemaps
+	BIT #$0800				; what map are we on?
+	BNE +
+	CLC : ADC #$0080		; go to next row if the second one
++	TAX
+	LDA #$0000
 	SEP #$20
 	DEC.b Render_TileY
 	BEQ .end				; if y = 0, we're finished
@@ -69,6 +74,7 @@ DrawStartingTilemap:
 .loop_entry
 	LDA.b (Render_DataPtr)
 	BMI	.use_subtable
+	ASL
 	TAY
 	REP #$20				; A 16-bit
 	LDA.b [Render_BlkPtrM0],y
@@ -81,10 +87,12 @@ DrawStartingTilemap:
 	STA.w VRAMBuffer+$42,x
 	INC.b Render_DataPtr
 	INX.b #4
+	LDA #$0000
 	SEP #$20				; A 8-bit
 	BRA .tile_loop
 
 .use_subtable
+	ASL
 	TAY
 	REP #$20				; A 16-bit
 	LDA.b [Render_BlkPtrS0],y
@@ -113,16 +121,17 @@ Render_UpdatePtrs:
 	TAX
 	LDA.w LevelMeta+MetaBlockPtr,x		; A now contains the word pointer to main level data
 	LDY.w LevelMeta+MetaBlockPtr+2,x		; Y now contains the bank
+	CLC
 	SEP #$10				; XY 8-bit
 	STA.b Render_BlkPtrM0
 	STY.b Render_BlkPtrM0+2
-	ADC.w #$0200			; Add $200 to each pointer
+	ADC.w #$0100			; Add $100 to each pointer
 	STA.b Render_BlkPtrM2
 	STY.b Render_BlkPtrM2+2
-	ADC.w #$0400
+	ADC.w #$0100
 	STA.b Render_BlkPtrM4
 	STY.b Render_BlkPtrM4+2
-	ADC.w #$0200
+	ADC.w #$0100
 	STA.b Render_BlkPtrM6
 	STY.b Render_BlkPtrM6+2
 	; TODO: subtable pointers
@@ -135,7 +144,7 @@ Render_UpdatePtrs:
 	RTS
 
 
-UploadTilemap:
+UploadBuffer:
 	PHP
 	REP #$30
 	PHB
@@ -149,5 +158,5 @@ UploadTilemap:
 .queue
 	db $01
 	dl VRAMBuffer
-	dw $8000, $1000
+	dw $4000, $1000
 	db $FF
