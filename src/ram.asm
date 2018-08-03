@@ -43,6 +43,17 @@ define Fade_Source		$0F02		; Fadeout only
 define Fade_Timer		$0F04
 define RunFrame_VBlank	$0F06		; The _actual_ VBlank routine pointer that must end in a JMP MainLoop
 
+define VRAMBufferPtr	$0F10		; Pointer to free-for-use VRAM buffer data.
+define VRAMBufferStart	$0F12		; Pointer to VRAM buffer which it's reset to every frame ($C000 by default).
+
+define HScrollBufPtr	$0F14		; Pointer to horizontal scroll buffer data
+define HScrollBufSize	$0F16		; Amount of columns
+define HScrollBufTarget	$0F18		; The VRAM address to start from
+define VScrollBufPtr	$0F1A		; Pointer to vertical scroll buffer data
+define VScrollBufSize	$0F1C		; Size of data for each plane, in bytes
+define VScrollBufTarget	$0F1E		; The VRAM address to start from
+
+
 ; $8000+: data
 define LevelMeta		$7EA800		; Chunk metadata.
 define LevelMetaSize	(LevelChunks-LevelMeta)/4	; nifty
@@ -57,10 +68,10 @@ define MetaCustomBlocks	$20			; Custom block table (renderer + collider longptr 
 
 define LevelChunks		$7EB000		; Level buffers. These contain 32x32 chunks of level, which are reloaded dynamically
 define LevelChunk0		LevelChunks
-define LevelChunk1		LevelChunks + 1*LevelChunkLen
-define LevelChunk2		LevelChunks + 2*LevelChunkLen
-define LevelChunk3		LevelChunks + 3*LevelChunkLen
+define LevelChunk1		LevelChunks + 1*LevelChunkSize
+define LevelChunk2		LevelChunks + 2*LevelChunkSize
+define LevelChunk3		LevelChunks + 3*LevelChunkSize
 
-define LevelChunkLen	$400
+define LevelChunkSize	$400
 
 define VRAMBuffer		$7EC000		; A buffer for VRAM operations, length 0x4000

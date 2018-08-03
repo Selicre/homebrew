@@ -3,6 +3,7 @@ define Movecam_CamXStart	$82
 define Movecam_CamYStart	$84
 define Movecam_CamXEnd		$86
 define Movecam_CamYEnd		$88
+define Movecam_SpeedM		$8A
 
 
 HexSpriteText:
@@ -51,7 +52,39 @@ SplitIRQ:
 	PLA
 	RTI
 
-; is also in bank 0 because lol
+VBlank_SyncCameraValues:
+	REP #$30			; A, XY 16-bit
+	DEC $22
+	; discard the return address and the flags
+	SEP #$30			; A, XY 8-bit
+	; sync camera scroll values
+	LDA $20
+	STA $210D
+	LDA $21
+	STA $210D
+	LDA $22
+	STA $210E
+	LDA $23
+	STA $210E
+	LDA $24
+	STA $210F
+	LDA $25
+	STA $210F
+	LDA $26
+	STA $2110
+	LDA $27
+	STA $2110
+	REP #$30
+	INC $22
+	JSR DrawAllSprites
+	JSL UploadScrollBuffer
+	JSR HDMASetup
+VBlank_DoNothing:
+	REP #$30
+	PLA : PLA
+	JMP MainLoop
+
+; is also in bank 0 because why not
 Movecam_LoadQueue:
 	db $01
 	dl GFXLevel
@@ -65,6 +98,9 @@ Movecam_LoadQueue:
 	db $01
 	dl GFXLevelMap
 	dw $4000, $2000
+	db $03
+	dl Chunk0
+	dw LevelChunks, LevelChunkSize
 	db $FF
 
 #[bank(02)]
@@ -82,13 +118,8 @@ GM_MovecamInit:
 	STX $02
 	LDX.w #LevelChunks
 	STX $00
--
-	STA [$00]
-	INX #2
-	STX $00
-	CPX.w #LevelChunks + $400
-	BNE -
 
+	JSL InitVRAMBuffers
 
 	LDX.w #Movecam_LoadQueue
 	JSL LoadDataQueue
@@ -122,6 +153,8 @@ GM_MovecamInit:
 	STA.w TS
 	LDA #%00000000
 	STA.w OBSEL
+
+
 	; Set up IRQ to split the screen in two
 
 	;REP #$20
@@ -136,9 +169,9 @@ GM_MovecamInit:
 	LDA #$0000
 	STA.b Movecam_CamXStart
 	STA.b Movecam_CamYStart
-	LDA #$0380
+	LDA #$0100
 	STA.b Movecam_CamXEnd
-	LDA #$0140
+	LDA #$0120
 	STA.b Movecam_CamYEnd
 	LDA.w #GMID_Movecam-GamemodePtrs
 	STA.b Gamemode
@@ -148,6 +181,10 @@ GM_MovecamInit:
 	;RTS
 
 GM_Movecam:
+	; Scroll the thing
+	JSL InitVRAMBuffers
+	REP #$30
+
 	; Controller stuff
 	LDA.w JOY1
 	BIT #$0F00				; If no controller buttons are held..
@@ -160,42 +197,51 @@ GM_Movecam:
 	LSR
 	LSR
 	LSR
-	CMP #$0010				; max speed = [-4; 4]
+	CMP #$0007				; max speed = [-4; 4]
 	BMI +
-	LDA #$0010
+	LDA #$0007
 +
-	CMP #$FFF0
+	CMP #$FFF7
 	BPL +
-	LDA #$FFF0
+	LDA #$FFF7
 +
-	STA $00
+	STA.b Movecam_SpeedM
+
 	LDA.w JOY1
 	BIT #$0100				; adjust camera position
 	BEQ +
 	TAX
 	LDA.b CamX
-	SEC : ADC $00
+	SEC : ADC.b Movecam_SpeedM	; note: carry is set to move the camera immediately
 	STA.b CamX
 	TXA
 +	BIT #$0200
 	BEQ +
 	TAX
 	LDA.b CamX
-	CLC : SBC $00
+	CLC : SBC.b Movecam_SpeedM
 	STA.b CamX
 	TXA
 +	BIT #$0400
 	BEQ +
+	PHA
+	LDA #$00F0			; scroll downward
+	JSL DrawTilemapRow
+	PLA
 	TAX
 	LDA.b CamY
-	SEC : ADC $00
+	SEC : ADC.b Movecam_SpeedM
 	STA.b CamY
 	TXA
 +	BIT #$0800
 	BEQ +
+	PHA
+	LDA #$FFF0			; scroll upward
+	JSL DrawTilemapRow
+	PLA
 	TAX
 	LDA.b CamY
-	CLC : SBC $00
+	CLC : SBC.b Movecam_SpeedM
 	STA.b CamY
 	TXA
 +
@@ -230,7 +276,6 @@ GM_Movecam:
 	LSR : LSR : LSR : LSR
 	STA.b BGY
 
-
 	; Draw the HUD
 	;BRA +
 	LDA.w CamX
@@ -252,21 +297,21 @@ GM_Movecam:
 +
 Thing:
 	; Draw the misc test sprites
-	LDA.w #$0060
-	CLC : SBC.w CamX
+	LDA.w #$0080
+	SEC : SBC.w CamX
 	TAX
-	LDA.w #$00A0
-	CLC : SBC.w CamY
+	LDA.w #$0090
+	SEC : SBC.w CamY
 	TAY
 	LDA.w #(%00110001 << 8) + $88
 	SEC
 	JSL AddSpriteTile
 
-	LDA.w #$0040
-	CLC : SBC.w CamX
+	LDA.w #$0060
+	SEC : SBC.w CamX
 	TAX
-	LDA.w #$00A0
-	CLC : SBC.w CamY
+	LDA.w #$0090
+	SEC : SBC.w CamY
 	TAY
 	LDA.w #(%00110001 << 8) + $8A
 	SEC

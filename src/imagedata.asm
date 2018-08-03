@@ -34,3 +34,7 @@ BlockMappings:
 	; previous filename. I'll rename it when I'm gonna be building this
 	; from a json file anyway
 	incbin "block_mappings2.bin"
+
+; Uncompressed for now.
+Chunk0:
+	incbin "chunk0.bin"

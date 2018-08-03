@@ -18,34 +18,6 @@ RunFrame:
 	STA.b VBlankPtr
 	RTS
 
-VBlank_SyncCameraValues:
-	REP #$30			; A, XY 16-bit
-	; discard the return address and the flags
-	SEP #$30			; A, XY 8-bit
-	; sync camera scroll values
-	LDA $20
-	STA $210D
-	LDA $21
-	STA $210D
-	LDA $22
-	STA $210E
-	LDA $23
-	STA $210E
-	LDA $24
-	STA $210F
-	LDA $25
-	STA $210F
-	LDA $26
-	STA $2110
-	LDA $27
-	STA $2110
-	REP #$30
-	JSR DrawAllSprites
-	JSR HDMASetup
-VBlank_DoNothing:
-	REP #$30
-	PLA : PLA
-	JMP MainLoop
 
 
 #[bank(02)]
