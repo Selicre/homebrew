@@ -12,7 +12,7 @@ define Render_TileX		$00		; Current x tile index
 define Render_TileY		$01		; Current y tile index
 define Render_DataPtr	$02		; Pointer to level data
 define Render_ChunkInd	$04		; Chunk index
-define Render_ChunkIndS	$05		; Chunk index to start drawing from after the seam
+define Render_SOffset	$05		; Seam offset
 define Render_BlkPtrM0	$08		; Long pointer to main block mappings
 define Render_BlkPtrM2	$0B		; + 3
 define Render_BlkPtrM4	$0E		; + 6
@@ -116,6 +116,7 @@ DrawStartingTilemap:
 ; Updates the long pointers in scratch RAM. A is the chunk ID.
 Render_UpdatePtrs:
 	PHY
+	PHX
 	PHP
 	XBA						; << 8
 	ASL						; << 1 - Basically, make X go in $200 increments
@@ -156,9 +157,14 @@ Render_UpdatePtrs:
 	PLA
 	ASL						; << 2 - $400 increments
 	ORA.w #LevelChunks
-	ORA.b Render_DataPtr
+	PHA
+	LDA.b Render_DataPtr
+	AND #$03FF
+	ORA 1,s
 	STA.b Render_DataPtr
+	PLA
 	PLP
+	PLX
 	PLY
 	RTS
 
@@ -172,65 +178,81 @@ DrawTilemapRow:
 	PEA $7E00
 	PLB #2
 
-	PHA					; stack +2
-	LDA.w CamX
-	; Get the block ID of when to switch drawing to a different chunk
-	LSR : LSR : LSR : LSR
-	SEC : SBC #$0004	; push it 4 blocks away from the camera
-	PHA					; stack +2
+	CLC : ADC.w CamY		; get the rendered row camera position
+	AND.w #$7FF				; clamp
+	PHA						; stack +2
 
-	LDA 3,s				; Get the row
-	CLC : ADC.w CamY	; get the rendered row camera position
-	PHA					; set ScrollBuf data here
-	AND #$03F0
+	;LDA 1,s				; Get the row
+	AND #$01F0
 	ASL
-	STA.w Render_DataPtr	; maybe?
+	STA.w Render_DataPtr	; get chunk
 	ASL
 	AND #$03C0
 	ORA #$4000
-	STA.w VScrollBufTarget	; - correct
-	LDA #$0080			; for now, only $80 is supported
+	STA.w VScrollBufTarget
+	LDA #$0080				; for now, only $80 (one row) is supported
 	STA.w VScrollBufSize
 
-	; Locate the horizontal chunk seam
 	LDA.w CamX
-	SEP #$20			; A 8-bit
-	XBA
-	LSR
-	STA $00				; save the chunk ID here (maybe put in Y?)
-	PLA					; stack -2
-	PLA
-	;XBA					; get the 512px high index
-	LSR
+	AND.w #$7FF				; clamp
+	; Locate the horizontal chunk seam
+	; Get the block ID of when to switch drawing to a different chunk
+	LSR : LSR : LSR : LSR
+	SEP #$30				; AXY 8-bit
+	SEC : SBC #$08			; push it 8 blocks away from the camera
+	EOR #$1F				; negate
+	AND #$1F				; clamp
+	STA.b Render_SOffset	; store
+	STA.b $50
 
-	AND #$02			; get the current chunk index
-	ADC $00				; get chunk ID
-	AND #$03
+	LDA 2,s					; high byte of rendered row
+	AND #$02				; get the current chunk index
+	STA $00					; save the chunk ID here
 	
-	REP #$20			; A 16-bit
-	LDA #$0000			; for now
+	LDA CamX+1				; get the 512px high index
+	AND #$07
+	LSR
+	EOR $00			; get chunk ID
+	LDY.b Render_SOffset
+	CPY #$08
+	BMI +
+	INC						; start drawing with a previous chunk?
++	AND #$03
+	STA.b Render_ChunkInd
+	REP #$30				; AXY 16-bit
 	JSR Render_UpdatePtrs
 
 	; TEMP STUFF
 
 	; END TEMP STUFF
 
-	LDX.w VRAMBufferPtr	; Index into VRAMBuffer
+	LDX.w VRAMBufferPtr		; Index into VRAMBuffer
 	STX.w VScrollBufPtr
 	LDA #$0000
-	SEP #$20			; A 8-bit
-	LDA #$21			; $20 tiles to draw (+1 for initial dec)
+	SEP #$20				; A 8-bit
+	LDA #$21				; $20 tiles to draw (+1 for initial dec)
 	STA.b Render_TileX
 .tile_loop
 	DEC.b Render_TileX
-	BEQ .end			; if x = 0, we are done boys
+	BEQ .end				; if x = 0, we are done boys
 	LDA.b Render_TileX
-	CMP #$10			; if x = 10, switch to the other plane
+	CMP #$10				; if x = 10, switch to the other plane
 	BNE +
 	REP #$20				; A 16-bit
 	TXA
-	CLC : ADC #$0040				; switch plane
+	CLC : ADC #$0040		; switch plane
 	TAX
+	LDA #$0000
+	SEP #$20
+	LDA.b Render_TileX
++
+	CMP.b Render_SOffset	; if x = chunk seam..
+	BNE +
+	LDA.b Render_ChunkInd
+	DEC
+	AND #$03
+	REP #$20
+	JSR Render_UpdatePtrs
 	LDA #$0000
 	SEP #$20
 +
@@ -275,7 +297,7 @@ DrawTilemapRow:
 	REP #$30
 	STX.w VRAMBufferPtr		; save the VRAM offset
 	PLA						; stack -2
-	PLA						; stack -2
+	;PLA						; stack -2
 	PLB
 	RTL
 

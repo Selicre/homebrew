@@ -56,7 +56,8 @@ define VScrollBufTarget	$0F1E		; The VRAM address to start from
 
 ; $8000+: data
 define LevelMeta		$7EA800		; Chunk metadata.
-define LevelMetaSize	(LevelChunks-LevelMeta)/4	; nifty
+define LevelMetaSize	$200
+;define LevelMetaSize	(LevelChunks-LevelMeta)/4	; nifty
 
 define MetaBlockPtr		$00			; Long pointer to $00-$7F block definitions
 define MetaSubBlockPtr	$03			; Long pointer to $80-$FF block definitions

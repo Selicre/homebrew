@@ -36,5 +36,5 @@ BlockMappings:
 	incbin "block_mappings2.bin"
 
 ; Uncompressed for now.
-Chunk0:
-	incbin "chunk0.bin"
+Chunks0123:
+	incbin "chunks0123.bin"

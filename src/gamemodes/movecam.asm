@@ -99,8 +99,8 @@ Movecam_LoadQueue:
 	dl GFXLevelMap
 	dw $4000, $2000
 	db $03
-	dl Chunk0
-	dw LevelChunks, LevelChunkSize
+	dl Chunks0123
+	dw LevelChunks, $1000
 	db $FF
 
 #[bank(02)]
@@ -131,6 +131,26 @@ GM_MovecamInit:
 	LDA.w #BlockMappings>>8						; 01 02
 	STA.l LevelMeta+4
 	
+	LDA.w #BlockMappings						; 01 02
+	STA.l LevelMeta + LevelMetaSize
+	LDA.w #BlockMappings<<8|BlockMappings>>16	; 03 01
+	STA.l LevelMeta+2 + LevelMetaSize
+	LDA.w #BlockMappings>>8						; 01 02
+	STA.l LevelMeta+4 + LevelMetaSize
+	
+	LDA.w #BlockMappings						; 01 02
+	STA.l LevelMeta + 2*LevelMetaSize
+	LDA.w #BlockMappings<<8|BlockMappings>>16	; 03 01
+	STA.l LevelMeta+2 + 2*LevelMetaSize
+	LDA.w #BlockMappings>>8						; 01 02
+	STA.l LevelMeta+4 + 2*LevelMetaSize
+	
+	LDA.w #BlockMappings						; 01 02
+	STA.l LevelMeta + 3*LevelMetaSize
+	LDA.w #BlockMappings<<8|BlockMappings>>16	; 03 01
+	STA.l LevelMeta+2 + 3*LevelMetaSize
+	LDA.w #BlockMappings>>8						; 01 02
+	STA.l LevelMeta+4 + 3*LevelMetaSize
 	LDA #$0000
 	JSL DrawStartingTilemap
 	JSL UploadBuffer
@@ -169,9 +189,9 @@ GM_MovecamInit:
 	LDA #$0000
 	STA.b Movecam_CamXStart
 	STA.b Movecam_CamYStart
-	LDA #$0100
+	LDA #$3100
 	STA.b Movecam_CamXEnd
-	LDA #$0120
+	LDA #$3120
 	STA.b Movecam_CamYEnd
 	LDA.w #GMID_Movecam-GamemodePtrs
 	STA.b Gamemode
