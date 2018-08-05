@@ -260,7 +260,7 @@ GM_Movecam:
 	BEQ +
 
 	PHA
-	LDA #$00E0			; scroll downward
+	LDA #$00F0			; scroll downward
 	JSL DrawTilemapRow
 	PLA
 

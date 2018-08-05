@@ -22,6 +22,8 @@ define Render_BlkPtrS2	$17
 define Render_BlkPtrS4	$1A
 define Render_BlkPtrS6	$1D
 
+define Render_SeamChg	$0F20	; This location will be invalidated by the routine, so it's fine to reuse it
+
 
 ; A is the chunk index, from 0 to 3.
 ; This will only render the tilemap to the VRAM buffer, not actually transfer anything.
@@ -118,6 +120,7 @@ Render_UpdatePtrs:
 	PHY
 	PHX
 	PHP
+	AND #$00FF
 	XBA						; << 8
 	ASL						; << 1 - Basically, make X go in $200 increments
 	PHA
@@ -153,13 +156,11 @@ Render_UpdatePtrs:
 	ADC.w #$0100
 	STA.b Render_BlkPtrS6
 	STY.b Render_BlkPtrS6+2
-	; TODO: subtable pointers
 	PLA
 	ASL						; << 2 - $400 increments
 	ORA.w #LevelChunks
 	PHA
 	LDA.b Render_DataPtr
-	AND #$03FF
 	ORA 1,s
 	STA.b Render_DataPtr
 	PLA
@@ -202,24 +203,53 @@ DrawTilemapColumn:
 	
 
 	LDA.w CamY
+	AND.w #$7F0				; clamp and coarse
+	SEC : SBC #$0010		; push it 1 block away from the camera
+	PHA						; stack +2
 	LSR : LSR : LSR : LSR
-	SEP #$30				; AXY 8-bit
-	SEC : SBC #$01			; push it 1 block away from the camera
+	SEP #$20				; A 8-bit
 	EOR #$0F				; negate
 	AND #$0F				; clamp
 	STA.b Render_SOffset	; store
 	STA.b $52
 	
-
-	LDA.w CamY				; high byte of rendered row
+	LDA 2,s
 	AND #$02				; get the current chunk index
 	STA $00					; save the chunk ID here
 	
-	LDA 2,s					; get the 512px high index
+	LDA 4,s					; get the 512px high index
 	AND #$07
 	LSR
 	EOR $00			; get chunk ID
-	
+	STA.b Render_ChunkInd
+
+
+	LDY.w #.changeChunk
+	LDA 2,s				; high byte of rendered row
+	BIT #$01
+	BNE +
+	REP #$20
+	LDA.w Render_DataPtr
+	CLC : ADC.w #$0200					; start from bottom row
+	STA.w Render_DataPtr
+	STA.b $54
+	SEP #$20
+	LDY.w #.keepChunk
+	BRA ++
++
+	REP #$20
+	;LDA.b Render_DataPtr
+	;AND.w #$01FF
+	;STA.b Render_DataPtr
+	SEP #$20
+	LDA.b Render_ChunkInd
+	EOR #$02
+	STA.b Render_ChunkInd
+++	STY.w Render_SeamChg
+
+	LDA.b #$00
+	XBA
+	LDA.b Render_ChunkInd
 	REP #$30
 	JSR Render_UpdatePtrs
 	LDA.w #$0000
@@ -228,23 +258,20 @@ DrawTilemapColumn:
 	SEP #$20				; A 8-bit
 	LDA #$11				; $10 tiles to draw (+1 for initial dec)
 	STA.b Render_TileY
+	
+
 .tile_loop
 	DEC.b Render_TileY
 	BEQ .end				; if x = 0, we are done boys
-	;LDA.b Render_TileY
-	;CMP.b Render_SOffset	; if x = chunk seam..
-	;BNE +
-	;LDA.b Render_ChunkInd
-	;EOR #$02				; switch chunks
-	;AND #$03
-	;REP #$20
-	;;JSR Render_UpdatePtrs
-	;LDA #$0000
-	;SEP #$20
-;+
+	LDA.b Render_TileY
+	CMP.b Render_SOffset	; if x = chunk seam..
+	BNE ..end
+	PEA.w ..end-1			; DIY JSR
+	JMP (Render_SeamChg)
+..end
 	; Get block mappings
 	LDA.b (Render_DataPtr)
-	;BMI .use_subtable
+	BMI .use_subtable
 	ASL
 	TAY
 	REP #$20				; A 16-bit
@@ -271,11 +298,11 @@ DrawTilemapColumn:
 	LDA.b [Render_BlkPtrS0],y
 	STA.w $00,x
 	LDA.b [Render_BlkPtrS2],y
-	STA.w $80,x
+	STA.w $40,x
 	LDA.b [Render_BlkPtrS4],y
 	STA.w $02,x
 	LDA.b [Render_BlkPtrS6],y
-	STA.w $82,x
+	STA.w $42,x
 	LDA.b Render_DataPtr
 	CLC : ADC.w #$0010
 	STA.b Render_DataPtr
@@ -285,10 +312,40 @@ DrawTilemapColumn:
 	BRA .tile_loop
 .end
 	REP #$30
-	STX.w VRAMBufferPtr		; save the VRAM offset
+	TXA
+	ADC.w #$0040			; Seek to end of buffer
+	STA.w VRAMBufferPtr		; save the VRAM offset
+	PLA						; stack -2
 	PLA						; stack -2
 	PLB
 	RTL
+.changeChunk:
+	REP #$20
+	LDA.w Render_DataPtr
+	AND #$01FF					; clamp
+	STA.w Render_DataPtr
+	SEP #$20
+	LDA.b Render_ChunkInd
+	EOR #$02
+	REP #$20
+
+	;AND #$00FF
+	JSR Render_UpdatePtrs
+	LDA.w Render_DataPtr
+	CLC : ADC.w #$0200					; start from bottom row
+	STA.w Render_DataPtr
+	LDA #$0000
+	SEP #$20
+	RTS
+
+.keepChunk:
+	REP #$20
+	LDA.w Render_DataPtr
+	SEC : SBC.w #$0200					; start from bottom row
+	STA.w Render_DataPtr
+	LDA #$0000
+	SEP #$20
+	RTS
 
 
 ; Vertical scrolling routine
@@ -372,6 +429,11 @@ DrawTilemapRow:
 	DEC
 	AND #$03
 	REP #$20
+	PHA
+	LDA.b Render_DataPtr
+	AND #$03FF
+	STA.b Render_DataPtr
+	PLA
 	JSR Render_UpdatePtrs
 	LDA #$0000
 	SEP #$20
@@ -415,7 +477,9 @@ DrawTilemapRow:
 	BRA .tile_loop
 .end
 	REP #$30
-	STX.w VRAMBufferPtr		; save the VRAM offset
+	TAX
+	ADC.w #$0040			; seek to end of buffer
+	STA.w VRAMBufferPtr		; save the VRAM offset
 	PLA						; stack -2
 	PLB
 	RTL
