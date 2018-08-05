@@ -168,9 +168,133 @@ Render_UpdatePtrs:
 	PLY
 	RTS
 
+; Horizontal scrolling routine
+; A is the column offset
+
+DrawTilemapColumn:
+	; Set the DBR to the RAM
+	PHB
+	PEA $7E00
+	PLB #2
+	
+	CLC : ADC.w CamX		; get the rendered column camera position
+	AND.w #$7F0				; clamp and coarse
+	PHA						; stack +2
+
+	; WE NEED: DataPtr, Render_SOffset
+	LSR						; get tilemap VRAM address
+	LSR
+	LSR
+	AND #$003E
+	BIT #$0020				; Second plane?
+	BEQ +
+	EOR #$0420				; Put onto the actual second plane
++
+	ORA.w #$4000
+	STA.w HScrollBufTarget	; Put as VRAM target
+	LDA.w #$0001			; 1 block column only for now
+	STA.w HScrollBufSize
+
+	LDA 1,s
+	LSR : LSR : LSR : LSR
+	AND.w #$001F			; get block position
+	STA.w Render_DataPtr
+	
+
+	LDA.w CamY
+	LSR : LSR : LSR : LSR
+	SEP #$30				; AXY 8-bit
+	SEC : SBC #$01			; push it 1 block away from the camera
+	EOR #$0F				; negate
+	AND #$0F				; clamp
+	STA.b Render_SOffset	; store
+	STA.b $52
+	
+
+	LDA.w CamY				; high byte of rendered row
+	AND #$02				; get the current chunk index
+	STA $00					; save the chunk ID here
+	
+	LDA 2,s					; get the 512px high index
+	AND #$07
+	LSR
+	EOR $00			; get chunk ID
+	
+	REP #$30
+	JSR Render_UpdatePtrs
+	LDA.w #$0000
+	LDX.w VRAMBufferPtr		; Index into VRAMBuffer
+	STX.w HScrollBufPtr
+	SEP #$20				; A 8-bit
+	LDA #$11				; $10 tiles to draw (+1 for initial dec)
+	STA.b Render_TileY
+.tile_loop
+	DEC.b Render_TileY
+	BEQ .end				; if x = 0, we are done boys
+	;LDA.b Render_TileY
+	;CMP.b Render_SOffset	; if x = chunk seam..
+	;BNE +
+	;LDA.b Render_ChunkInd
+	;EOR #$02				; switch chunks
+	;AND #$03
+	;REP #$20
+	;;JSR Render_UpdatePtrs
+	;LDA #$0000
+	;SEP #$20
+;+
+	; Get block mappings
+	LDA.b (Render_DataPtr)
+	;BMI .use_subtable
+	ASL
+	TAY
+	REP #$20				; A 16-bit
+	LDA.b [Render_BlkPtrM0],y	; the buffer is transposed
+	STA.w $00,x
+	LDA.b [Render_BlkPtrM2],y
+	STA.w $40,x
+	LDA.b [Render_BlkPtrM4],y
+	STA.w $02,x
+	LDA.b [Render_BlkPtrM6],y
+	STA.w $42,x
+	LDA.b Render_DataPtr
+	CLC : ADC.w #$0020
+	STA.b Render_DataPtr
+	INX.b #4
+	LDA #$0000
+	SEP #$20				; A 8-bit
+	BRA .tile_loop
+
+.use_subtable
+	ASL
+	TAY
+	REP #$20				; A 16-bit
+	LDA.b [Render_BlkPtrS0],y
+	STA.w $00,x
+	LDA.b [Render_BlkPtrS2],y
+	STA.w $80,x
+	LDA.b [Render_BlkPtrS4],y
+	STA.w $02,x
+	LDA.b [Render_BlkPtrS6],y
+	STA.w $82,x
+	LDA.b Render_DataPtr
+	CLC : ADC.w #$0010
+	STA.b Render_DataPtr
+	INX.b #4
+	LDA #$0000
+	SEP #$20				; A 8-bit
+	BRA .tile_loop
+.end
+	REP #$30
+	STX.w VRAMBufferPtr		; save the VRAM offset
+	PLA						; stack -2
+	PLB
+	RTL
+
+
 ; Vertical scrolling routine
 ; Put the camera offset to redraw in A (should be divisible by $10) - e.g. $F0 for scrolling downward.
 ; TODO: optimize it to where it only draws the visible part.
+; TODO: fetch the seams from elsewhere
 
 DrawTilemapRow:
 	; Set the DBR to the RAM
@@ -221,10 +345,6 @@ DrawTilemapRow:
 	STA.b Render_ChunkInd
 	REP #$30				; AXY 16-bit
 	JSR Render_UpdatePtrs
-
-	; TEMP STUFF
-
-	; END TEMP STUFF
 
 	LDX.w VRAMBufferPtr		; Index into VRAMBuffer
 	STX.w VScrollBufPtr
@@ -297,7 +417,6 @@ DrawTilemapRow:
 	REP #$30
 	STX.w VRAMBufferPtr		; save the VRAM offset
 	PLA						; stack -2
-	;PLA						; stack -2
 	PLB
 	RTL
 
@@ -368,24 +487,42 @@ UploadScrollBuffer:
 	REP #$10
 	LDX.w #$0000
 	JSL LoadDataQueue
+	SEP #$10
++
+	LDA.w HScrollBufPtr
+	BEQ +		; if there's nothing in the queue, leave
+	STA $01
+	LDY #$04	; VRAM columns mode
+	STY $00
+	LDY #$7E	; bank
+	STY $03
+	LDA.w HScrollBufTarget
+	STA $04
+	LDA.w HScrollBufSize
+	LDA.w #$0040
+	STA $06
+	; the second plane
+	;LDA.w #(VRAMBuffer>>16)<<8|$01
+	LDY #$04	; VRAM columns mode
+	STY $08
+	LDY #$7E	; bank
+	STY $0B
+	LDA.w HScrollBufPtr
+	CLC : ADC #$0040	; second plane
+	STA $09
+	LDA.w HScrollBufTarget
+	INC			; next column in 1 word
+	STA $0C
+	LDA.w HScrollBufSize
+	LDA.w #$0040
+	STA $0E
+	LDA.w #$00FF
+	STA $10
+
+	REP #$10
+	LDX.w #$0000
+	JSL LoadDataQueueVRAMColumn
+	SEP #$10
 +
 	PLP
 	RTL
-
-
-;UploadScrollBuffer:
-	PHP
-	REP #$30
-	PHB
-	PHK
-	PLB
-	LDX.w #.queue
-	JSL LoadDataQueue
-	PLB
-	PLP
-	RTL
-.queue
-	db $01
-	dl VRAMBuffer
-	dw $4000, $0020
-	db $FF

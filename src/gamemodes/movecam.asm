@@ -230,35 +230,54 @@ GM_Movecam:
 	LDA.w JOY1
 	BIT #$0100				; adjust camera position
 	BEQ +
+	
+	PHA
+	LDA #$0140			; scroll downward
+	JSL DrawTilemapColumn
+	PLA
+
 	TAX
 	LDA.b CamX
 	SEC : ADC.b Movecam_SpeedM	; note: carry is set to move the camera immediately
 	STA.b CamX
 	TXA
+
 +	BIT #$0200
 	BEQ +
+
+	PHA
+	LDA #$FFC0			; scroll left
+	JSL DrawTilemapColumn
+	PLA
+
 	TAX
 	LDA.b CamX
 	CLC : SBC.b Movecam_SpeedM
 	STA.b CamX
 	TXA
+
 +	BIT #$0400
 	BEQ +
+
 	PHA
-	LDA #$00F0			; scroll downward
+	LDA #$00E0			; scroll downward
 	JSL DrawTilemapRow
 	PLA
+
 	TAX
 	LDA.b CamY
 	SEC : ADC.b Movecam_SpeedM
 	STA.b CamY
 	TXA
+
 +	BIT #$0800
 	BEQ +
+
 	PHA
 	LDA #$FFF0			; scroll upward
 	JSL DrawTilemapRow
 	PLA
+
 	TAX
 	LDA.b CamY
 	CLC : SBC.b Movecam_SpeedM

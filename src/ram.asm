@@ -43,15 +43,17 @@ define Fade_Source		$0F02		; Fadeout only
 define Fade_Timer		$0F04
 define RunFrame_VBlank	$0F06		; The _actual_ VBlank routine pointer that must end in a JMP MainLoop
 
-define VRAMBufferPtr	$0F10		; Pointer to free-for-use VRAM buffer data.
-define VRAMBufferStart	$0F12		; Pointer to VRAM buffer which it's reset to every frame ($C000 by default).
-
+define HScrollSeam		$0F10		; Horizontal scrolling loading seam (CamX - 4 of the previous frame)
+define VScrollSeam		$0F12		; Vertical scrolling loading seam (CamY - 1 of the previous frame)
 define HScrollBufPtr	$0F14		; Pointer to horizontal scroll buffer data
 define HScrollBufSize	$0F16		; Amount of columns
 define HScrollBufTarget	$0F18		; The VRAM address to start from
 define VScrollBufPtr	$0F1A		; Pointer to vertical scroll buffer data
 define VScrollBufSize	$0F1C		; Size of data for each plane, in bytes
 define VScrollBufTarget	$0F1E		; The VRAM address to start from
+
+define VRAMBufferPtr	$0F20		; Pointer to free-for-use VRAM buffer data.
+define VRAMBufferStart	$0F22		; Pointer to VRAM buffer which it's reset to every frame ($C000 by default).
 
 
 ; $8000+: data

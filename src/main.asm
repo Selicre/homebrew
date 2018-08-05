@@ -98,20 +98,24 @@ LoadDataQueue:
 	BEQ .loadVRAM	; if 1, VRAM
 	CMP #$02
 	BEQ .loadOAM	; if 2, OAM
+;	CMP #$03
+;	BEQ .loadWRAM
+;.loadVRAMColumns:
+;	LDY $0004,x	; B bus address
+;	STY $2116
+;	LDA #$81	; Video port control
+;	STA $2115
+;	LDA #%00000001	; Word increment mode
+;	STA $4300
+;	LDA #$18	; Destination: VRAM
+;	STA $4301
+;	BRA .startDMA
 .loadWRAM:			; if 3, WRAM
 	LDY $0004,x		; address in WRAM
 	STY.w WMADD
 	LDA #%00000000
 	STA $4300		; 1 byte increment
 	LDA.b #WMDATA	; Destination: WRAM
-	STA $4301
-	BRA .startDMA
-.loadOAM:
-	LDY $0004,x		; B bus address in OAM
-	STY.w OAMADD
-	LDA #%00000000
-	STA $4300		; 1 byte increment
-	LDA #$04		; Destination: OAM
 	STA $4301
 	BRA .startDMA
 .loadCGRAM:
@@ -131,6 +135,14 @@ LoadDataQueue:
 	STA $4300
 	LDA #$18	; Destination: VRAM
 	STA $4301
+	BRA .startDMA
+.loadOAM:
+	LDY $0004,x		; B bus address in OAM
+	STY.w OAMADD
+	LDA #%00000000
+	STA $4300		; 1 byte increment
+	LDA #$04		; Destination: OAM
+	STA $4301
 .startDMA:
 	LDA #$01	; Turn on DMA
 	STA $420B
@@ -146,6 +158,45 @@ LoadDataQueue:
 	PLA
 	RTL
 
+; FUCK. Let's just slap a TODO on this garbage.
+LoadDataQueueVRAMColumn:
+	PHA
+	PHY
+	PHP
+	SEP #$20	; 8-bit A
+.loop:
+	LDA $0000,x		; offset $01: command
+	BMI .end		; if $FF, end
+	LDY $0001,x		; A bus address
+	STY $4302
+	LDA $0003,x
+	STA $4304
+	LDY $0006,x		; Write size
+	STY $4305
+	LDA $0000,x		; read command again
+.loadVRAM:
+	LDY $0004,x	; B bus address
+	STY $2116
+	LDA #$81	; Video port control
+	STA $2115
+	LDA #%00000001	; Word increment mode
+	STA $4300
+	LDA #$18	; Destination: VRAM
+	STA $4301
+.startDMA:
+	LDA #$01	; Turn on DMA
+	STA $420B
+	REP #$20
+	TXA
+	CLC : ADC #$0008
+	TAX
+	SEP #$20
+	BRA .loop	; Loop again
+.end:
+	PLP
+	PLY
+	PLA
+	RTL
 
 BRK:
 -	BRA -
