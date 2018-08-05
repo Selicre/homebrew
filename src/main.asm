@@ -207,4 +207,5 @@ incsrc "hdma.asm"
 incsrc "imagedata.asm"
 
 incsrc "runframe.asm"
+incsrc "renderer/scrollmgr.asm"
 incsrc "renderer/level.asm"

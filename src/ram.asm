@@ -55,7 +55,6 @@ define VScrollBufTarget	$0F1E		; The VRAM address to start from
 define VRAMBufferPtr	$0F20		; Pointer to free-for-use VRAM buffer data.
 define VRAMBufferStart	$0F22		; Pointer to VRAM buffer which it's reset to every frame ($C000 by default).
 
-
 ; $8000+: data
 define LevelMeta		$7EA800		; Chunk metadata.
 define LevelMetaSize	$200
