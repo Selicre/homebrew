@@ -7,20 +7,32 @@
 ; Carry flag: larger sprite size
 ; Various improvements by Drex#6494
 
-AddSpriteTile:
-	PHP						; Stack 2
-	PHX						; Stack 1
-	PHA
-	LDA.w SprInputPtr		; Test if the OAM table is full
-	CMP.w #SprInputSub-4
-	BMI +
+AddSpriteTileLeave:
 	PLA
 	PLX
 	PLP
 	RTL						; If it is, bail
-+
-	PLA
+
+AddSpriteTile:
+	PHP						; Stack +1
 	STX.b Scratch
+	PHX						; Stack +2
+	PHA						; Stack +2
+	LDA.w SprInputPtr		; Test if the OAM table is full
+	CMP.w #SprInputSub-4
+	BPL AddSpriteTileLeave
+	LDA 3,s					; load x
+	CMP #$FFF0
+	BMI AddSpriteTileLeave	; if outside of range, leave
+	CMP #$0100
+	BPL AddSpriteTileLeave	; if outside of range, leave
+	TYA
+	CMP #$FFF0
+	BMI AddSpriteTileLeave	; if outside of range, leave
+	CMP #$00E0
+	BPL AddSpriteTileLeave	; if outside of range, leave
+
+	PLA
 	LDX.w SprInputPtr
 	STA $0002,x
 	SEP #$20    			; A 8-bit
