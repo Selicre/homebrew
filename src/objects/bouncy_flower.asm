@@ -102,5 +102,15 @@ ObjBouncyFlowerMain:
 ..noclamp
 	STA.b obj_XSpeed
 ..nobounce
-	JSL DrawMappings
+
+	LDA.b obj_XPos
+	SEC : SBC.w CamX
+	TAX
+	LDA.b obj_YPos
+	SEC : SBC.w CamY
+	TAY
+	;        vhppccc
+	LDA.w #(%0011000 << 9) | $18A
+	SEC
+	JSL AddSpriteTile
 	RTL

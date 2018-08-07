@@ -61,37 +61,104 @@ InitObjMgr:
 	RTL
 
 
-
-; Mappings format is an array of this:
-; 00: mode
+; Mappings format is an array of this, 5 bytes each:
+; 00: signed x offset (byte)
+; 01: signed y offset (byte)
+; 02-03: tile to use
+; 04: mode
 ;	$00: 8x8 tile
 ;	$01: 16x16 tile
-;	$FF: terminator
-; 01: signed x offset (byte)
-; 02: signed y offset (byte)
-; 03-04: tile to use
+;	If MSB set, then this is the last tile
+
+; This writes directly to the OAM buffer instead of calling AddSpriteTile.
+; Also, for simpler sprites you may as well just call the above function manually.
+
+; Also, this is broken and doesn't write to hioam yet.
 
 DrawMappings:
-	PHY				; stack +2
-	PHX				; stack +2
+	PHY
+	PHX
+	PHB
+
+	PEI obj_Mappings+1	; get the DB register
+	PLB #2
+
 	LDA.b obj_XPos
+	SEC : SBC.w CamX
 	PHA				; stack +2
 	LDA.b obj_YPos
+	SEC : SBC.w CamY
 	PHA				; stack +2
 	
-	LDA 3,s
-	SEC : SBC.w CamX
+	LDX.b obj_Mappings	; mappings offset
+
+	LDY.w SprInputPtr		; Test if the OAM table is full
+	CPY.w #SprInputSub-4
+	BPL .end
+	
+	BRA .entry
+.get_next_mapping
+	TXA
+	CLC : ADC.w #$0005
 	TAX
-	LDA 1,s
-	SEC : SBC.w CamY
-	TAY
-	;      yxppccct
-	LDA.w #(%00110001 << 8) + $8A
+.entry
+	; make sure that top of A is clear here
+	; TODO: only 8-bit addition?
+	LDA #$0000
+	; get X position
+	SEP #$20
+	LDA.w $0000,x
+	REP #$20
+	; sign-extend
+	BPL +
+	ORA #$FF00
++
+	CLC : ADC 1,s
+	CMP #$FFF0
+	BMI .get_next_mapping
+	CMP #$0100
+	BPL .get_next_mapping
+
+	SEP #$20
+	STA $0000,y
+	REP #$20
+
+
+	; make sure that top of A is clear here
+	LDA #$0000
+	SEP #$20
+	LDA.b $0001,x
+	REP #$20
+	; sign-extend
+	BPL +
+	ORA #$FF00
++
+	CLC : ADC 3,s
+	CMP #$FFF0
+	BMI .get_next_mapping
+	CMP #$00E0
+	BPL .get_next_mapping
+
+	SEP #$20
+	STA $0001,y
+	REP #$20
+
+	LDA.b $0002,x
+	STA $0002,y
+	CLC
+	; mappings mode
+	LDA.b $0004,x
+	PHP
+	BNE +
 	SEC
++
 	JSL AddSpriteTile
 
+.end
 	PLA
 	PLA
+
+	PLB
 	PLX
 	PLY
 	RTL
