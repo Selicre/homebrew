@@ -41,9 +41,7 @@ GM_LogoInit:
 	STA.w TS
 	LDA #%00000000
 	STA.w OBSEL
-	; Set up IRQ to split the screen in two
 
-	SEP #$30
 	LDA #%10100001	; enable NMI & IRQ
 	STA.w NMITIMEN
 	REP #$30
@@ -57,7 +55,7 @@ GM_LogoInit:
 GM_Logo:
 	DEC.b Logo_Timer
 	BNE +
-	LDA.w #GMID_MovecamInit-GamemodePtrs
+	LDA.w #GMID_LevelInit-GamemodePtrs
 	JMP FadeoutInit
 +
 	RTS

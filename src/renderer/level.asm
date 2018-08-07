@@ -171,6 +171,7 @@ Render_UpdatePtrs:
 
 ; Horizontal scrolling routine
 ; A is the column offset
+; TODO: pull seams from elsewhere
 
 DrawTilemapColumn:
 	; Set the DBR to the RAM
@@ -589,4 +590,41 @@ UploadScrollBuffer:
 	SEP #$10
 +
 	PLP
+	RTL
+
+
+; X/Y as pixel params, output: block ID in A, block collision in B
+
+GetBlockAt:
+	PHX
+	PHY
+	SEP #$20				; A 8-bit
+	LDA 2,s					; high byte of row
+	LSR
+	AND #$02				; get the current chunk index
+	STA.w $00				; save the chunk ID here
+	
+	LDA 4,s					; high byte of column
+	LSR
+	EOR.w $00				; get chunk ID
+	REP #$20
+	AND #$03
+	XBA
+	ASL : ASL
+	PHA
+	LDA 3,s					; row
+	AND #$FFF0
+	ASL						; get Y block offset
+	STA 3,s
+	LDA 5,s					; column
+	LSR : LSR : LSR : LSR
+	AND #$001F				; clamp to chunk
+	CLC : ADC 3,s
+	ORA 1,s					; add chunk coords
+	TAX
+	LDA.l LevelChunks,x
+	AND #$00FF
+	PLX
+	PLX
+	PLY
 	RTL

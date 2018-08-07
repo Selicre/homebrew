@@ -9,12 +9,12 @@ define ScrollMgr_Row	DrawTilemapRow
 #[bank(03)]
 ScrollMgr:
 	LDA.b CamX
-	;CLC : ADC.w #$0040	; $40px in front
+	CLC : ADC.w #$0040	; $40px in front
 	AND.w #$7F0
 	PHA					; stack +2
 
 	LDA.b CamY
-	;SEC : SBC.w #$0010	; $10px below
+	SEC : SBC.w #$0010	; $10px below
 	AND.w #$7F0
 	PHA					; stack +2
 	
@@ -24,7 +24,7 @@ ScrollMgr:
 
 	; TODO: remove this
 	BPL +
-	LDA #$0140
+	LDA #$01B0
 	BRA ++
 +
 	LDA #$FFC0
@@ -43,7 +43,7 @@ ScrollMgr:
 	LDA #$FFF0
 	BRA ++
 +
-	LDA #$00F0
+	LDA #$00E0
 ++
 	JSL ScrollMgr_Row
 	LDA 1,s
@@ -55,12 +55,12 @@ ScrollMgr:
 
 ScrollMgrInit:
 	LDA.b CamX
-	;CLC : ADC.w #$0040	; $40px in front
+	CLC : ADC.w #$0040	; $40px in front
 	AND.w #$7F0
 	STA.w HScrollSeam
 
 	LDA.b CamY
-	;SEC : SBC.w #$0010	; $10px below
+	SEC : SBC.w #$0010	; $10px below
 	AND.w #$7F0
 	STA.w VScrollSeam
 	RTL

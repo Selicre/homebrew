@@ -1,9 +1,9 @@
-define Movecam_Speed 		$80
-define Movecam_CamXStart	$82
-define Movecam_CamYStart	$84
-define Movecam_CamXEnd		$86
-define Movecam_CamYEnd		$88
-define Movecam_SpeedM		$8A
+define Level_Speed 		$80
+define Level_CamXStart	$82
+define Level_CamYStart	$84
+define Level_CamXEnd		$86
+define Level_CamYEnd		$88
+define Level_SpeedM		$8A
 
 
 HexSpriteText:
@@ -85,7 +85,7 @@ VBlank_DoNothing:
 	JMP MainLoop
 
 ; is also in bank 0 because why not
-Movecam_LoadQueue:
+Level_LoadQueue:
 	db $01
 	dl GFXLevel
 	dw $0000, $4000
@@ -104,7 +104,7 @@ Movecam_LoadQueue:
 	db $FF
 
 #[bank(02)]
-GM_MovecamInit:
+GM_LevelInit:
 	SEP #$30
 	LDA #%00000001	; enable NMI & IRQ
 	STA.w NMITIMEN
@@ -121,8 +121,31 @@ GM_MovecamInit:
 
 	JSL InitVRAMBuffers
 
-	LDX.w #Movecam_LoadQueue
+	LDX.w #Level_LoadQueue
 	JSL LoadDataQueue
+	JSL InitObjMgr
+
+	; Spawn one object
+	LDA.w #ObjBouncyFlower
+	STA $1000
+	LDA.w #ObjBouncyFlower>>8
+	STA $1001
+
+	LDA.w #$0080
+	STA $1000+obj_XPos
+	LDA.w #$0040
+	STA $1000+obj_YPos
+
+	; Spawn one object
+	LDA.w #ObjBouncyFlower
+	STA $1040
+	LDA.w #ObjBouncyFlower>>8
+	STA $1041
+
+	LDA.w #$0100
+	STA $1040+obj_XPos
+	LDA.w #$0040
+	STA $1040+obj_YPos
 
 	LDA.w #BlockMappings						; 01 02
 	STA.l LevelMeta
@@ -187,21 +210,21 @@ GM_MovecamInit:
 	STA.w NMITIMEN
 	REP #$30
 	LDA #$0000
-	STA.b Movecam_CamXStart
-	STA.b Movecam_CamYStart
+	STA.b Level_CamXStart
+	STA.b Level_CamYStart
 	JSL ScrollMgrInit
+
 	LDA #$3100
-	STA.b Movecam_CamXEnd
+	STA.b Level_CamXEnd
 	LDA #$3120
-	STA.b Movecam_CamYEnd
-	LDA.w #GMID_Movecam-GamemodePtrs
+	STA.b Level_CamYEnd
+	LDA.w #GMID_Level-GamemodePtrs
 	STA.b Gamemode
 	LDA.w #VBlank_SyncCameraValues
 	STA.w RunFrame_VBlank
 	JMP FadeinInit
-	;RTS
 
-GM_Movecam:
+GM_Level:
 	; Scroll the thing
 	JSL InitVRAMBuffers
 	REP #$30
@@ -210,10 +233,10 @@ GM_Movecam:
 	LDA.w JOY1
 	BIT #$0F00				; If no controller buttons are held..
 	BNE +
-	STZ.b Movecam_Speed		; Remove all speed
-+	INC.b Movecam_Speed		; Otherwise, add 1
+	STZ.b Level_Speed		; Remove all speed
++	INC.b Level_Speed		; Otherwise, add 1
 	;BNE ++
-	LDA.b Movecam_Speed
+	LDA.b Level_Speed
 	LSR
 	LSR
 	LSR
@@ -226,7 +249,7 @@ GM_Movecam:
 	BPL +
 	LDA #$FFF7
 +
-	STA.b Movecam_SpeedM
+	STA.b Level_SpeedM
 
 	LDA.w JOY1
 	BIT #$0100				; adjust camera position
@@ -234,7 +257,7 @@ GM_Movecam:
 	
 	TAX
 	LDA.b CamX
-	SEC : ADC.b Movecam_SpeedM	; note: carry is set to move the camera immediately
+	SEC : ADC.b Level_SpeedM	; note: carry is set to move the camera immediately
 	STA.b CamX
 	TXA
 
@@ -243,7 +266,7 @@ GM_Movecam:
 
 	TAX
 	LDA.b CamX
-	CLC : SBC.b Movecam_SpeedM
+	CLC : SBC.b Level_SpeedM
 	STA.b CamX
 	TXA
 
@@ -252,7 +275,7 @@ GM_Movecam:
 
 	TAX
 	LDA.b CamY
-	SEC : ADC.b Movecam_SpeedM
+	SEC : ADC.b Level_SpeedM
 	STA.b CamY
 	TXA
 
@@ -261,33 +284,32 @@ GM_Movecam:
 	
 	TAX
 	LDA.b CamY
-	CLC : SBC.b Movecam_SpeedM
+	CLC : SBC.b Level_SpeedM
 	STA.b CamY
 	TXA
 +
 
 	; Add camera borders
 	LDA.b CamX
-	CMP.b Movecam_CamXStart
+	CMP.b Level_CamXStart
 	BPL +
 	STZ.b CamX
 +
 	LDA.b CamY
-	CMP.b Movecam_CamYStart
+	CMP.b Level_CamYStart
 	BPL +
 	STZ.b CamY
 +
-	LDA.b Movecam_CamXEnd
+	LDA.b Level_CamXEnd
 	CMP.b CamX
 	BPL +
 	STA.b CamX
 +
-	LDA.b Movecam_CamYEnd
+	LDA.b Level_CamYEnd
 	CMP.b CamY
 	BPL +
 	STA.b CamY
 +
-	JSL ScrollMgr
 
 ; Update BG
 	LDA.b CamX
@@ -296,6 +318,9 @@ GM_Movecam:
 	LDA.b CamY
 	LSR : LSR : LSR : LSR
 	STA.b BGY
+
+	JSL ScrollMgr
+
 
 	; Draw the HUD
 	;BRA +
@@ -316,7 +341,10 @@ GM_Movecam:
 	LDY.w #$0028
 	JSR HexSpriteText
 +
-Thing:
+	
+	JSL ObjectMgr
+
+	RTS
 	; Draw the misc test sprites
 	LDA.w #$0080
 	SEC : SBC.w CamX

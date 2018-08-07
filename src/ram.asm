@@ -28,13 +28,14 @@ define DecQSavedIP		$02FB		; Saved decompression instruction pointer (long)
 define DecQVBlank		$02FE		; Pointer to previous VBlank routine
 define DecQRunning		$02FF		; Decompressing right now?
 
-; $03xx - $05xx: sprite table
+; $0300 - $0530: sprite table
 define SprInputMain		$0300		; $200 bytes
 define SprInputSub		$0500		; $20 bytes
 define SprInputPtr		$0520		; Pointer to LoOAM
 define SprInputSubPtr	$0522		; Pointer to HiOAM
 define SprInputIndex	$0524		; Index
 define SprInputLastPtr	$0526		; Last frame's LoOAM length
+
 
 
 ; $0Fxx: misc stuff
@@ -54,6 +55,12 @@ define VScrollBufTarget	$0F1E		; The VRAM address to start from
 
 define VRAMBufferPtr	$0F20		; Pointer to free-for-use VRAM buffer data.
 define VRAMBufferStart	$0F22		; Pointer to VRAM buffer which it's reset to every frame ($C000 by default).
+
+; $1000 - $1800: object status table
+define ObjectTable		$1000		; Object status table.
+define ObjectTableLen	$20			; 32 sprites that can be loaded. You can change this
+define ObjectSize		$40			; $40 bytes per sprite.
+define ObjectTableSize	ObjectTableLen*ObjectSize
 
 ; $8000+: data
 define LevelMeta		$7EA800		; Chunk metadata.

@@ -15,7 +15,7 @@ AddSpriteTileLeave:
 
 AddSpriteTile:
 	PHP						; Stack +1
-	STX.b Scratch
+	STX.w Scratch
 	PHX						; Stack +2
 	PHA						; Stack +2
 	LDA.w SprInputPtr		; Test if the OAM table is full
@@ -36,7 +36,7 @@ AddSpriteTile:
 	LDX.w SprInputPtr
 	STA $0002,x
 	SEP #$20    			; A 8-bit
-	LDA.b Scratch
+	LDA.w Scratch
 	STA $0000,x
 	TYA
 	STA $0001,x

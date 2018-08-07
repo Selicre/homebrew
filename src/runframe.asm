@@ -31,14 +31,12 @@ RunFrameTrampoline:
 GamemodePtrs:
 GMID_LogoInit:		dw GM_LogoInit
 GMID_Logo:			dw GM_Logo
-GMID_MovecamInit:	dw GM_MovecamInit
-GMID_Movecam:		dw GM_Movecam
+;GMID_MovecamInit:	dw GM_MovecamInit
+;GMID_Movecam:		dw GM_Movecam
+GMID_LevelInit:		dw GM_LevelInit
 GMID_Level:			dw GM_Level
 GMID_Fadein:		dw GM_Fadein
 GMID_Fadeout:		dw GM_Fadeout
-
-GM_Level:
-	RTS
 
 
 incsrc "gamemodes/logo.asm"
