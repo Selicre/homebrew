@@ -1,6 +1,6 @@
 
 ASM=/home/x10a94/Projects/Rust/piped-asm/target/release/piped-asm
-PALGEN=/home/x10a94/Projects/Rust/snespalgen/target/release/snespalgen
+PALGEN=/home/x10a94/Projects/Rust/rsgfx/target/release/rsgfx pal
 
 OUTPUT=build/out.sfc
 
@@ -10,6 +10,7 @@ PAL_FILES=$(patsubst palettes/%.png,build/%.pal, $(wildcard palettes/*.png))
 
 
 $(OUTPUT): $(PAL_FILES) $(SOURCE)
+	mkdir -p build
 	cd src; \
 	$(ASM) main.asm ../$(OUTPUT)
 
