@@ -3,6 +3,7 @@
 incsrc "lib/registers.asm"
 incsrc "ram.asm"
 
+#[start]
 Start:
 	SEI				; disable interrupts
 	CLC : XCE		; switch to native mode
@@ -57,13 +58,14 @@ MainLoop:
 VBlank_DoNothingRTI:
 	RTI
 
-
+#[nmi]
 VBlank:
 	JMP (VBlankPtr)
 
 
 ; IRQ handler
 
+#[irq]
 IRQ:
 	CMP $4211	; Dummy read
 	JMP (IRQPtr)
