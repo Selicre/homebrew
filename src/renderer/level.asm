@@ -179,8 +179,9 @@ DrawTilemapColumn:
 	PEA $7E00
 	PLB #2
 	
-	CLC : ADC.w CamX		; get the rendered column camera position
-	AND.w #$7F0				; clamp and coarse
+	;CLC : ADC.w CamX		; get the rendered column camera position
+	;AND.w #$7F0				; clamp and coarse
+	AND.w #$7F0
 	PHA						; stack +2
 
 	; WE NEED: DataPtr, Render_SOffset
@@ -203,13 +204,15 @@ DrawTilemapColumn:
 	STA.w Render_DataPtr
 	
 
-	LDA.w CamY
+	LDA.w VScrollSeam
+	SEC : SBC.w #$0100
 	AND.w #$7F0				; clamp and coarse
-	SEC : SBC #$0010		; push it 1 block away from the camera
+	;SEC : SBC #$0010		; push it 1 block away from the camera
 	PHA						; stack +2
 	LSR : LSR : LSR : LSR
 	SEP #$20				; A 8-bit
 	EOR #$0F				; negate
+	INC
 	AND #$0F				; clamp
 	STA.b Render_SOffset	; store
 	STA.b $52
@@ -238,11 +241,11 @@ DrawTilemapColumn:
 	LDY.w #.keepChunk
 	BRA ++
 +
-	REP #$20
+	;REP #$20
 	;LDA.b Render_DataPtr
 	;AND.w #$01FF
 	;STA.b Render_DataPtr
-	SEP #$20
+	;SEP #$20
 	LDA.b Render_ChunkInd
 	EOR #$02
 	STA.b Render_ChunkInd
@@ -259,7 +262,15 @@ DrawTilemapColumn:
 	SEP #$20				; A 8-bit
 	LDA #$11				; $10 tiles to draw (+1 for initial dec)
 	STA.b Render_TileY
-	
+
+	; Test if we need to change the seam right now
+
+	LDA.b Render_SOffset
+	BNE +
+	PEA.w ..end-1			; DIY JSR
+	JMP (Render_SeamChg)
+..end
++
 
 .tile_loop
 	DEC.b Render_TileY
@@ -360,8 +371,9 @@ DrawTilemapRow:
 	PEA $7E00
 	PLB #2
 
-	CLC : ADC.w CamY		; get the rendered row camera position
-	AND.w #$7FF				; clamp
+;	CLC : ADC.w CamY		; get the rendered row camera position
+;	AND.w #$7FF				; clamp
+	AND.w #$7F0
 	PHA						; stack +2
 
 	;LDA 1,s				; Get the row
@@ -375,14 +387,15 @@ DrawTilemapRow:
 	LDA #$0080				; for now, only $80 (one row) is supported
 	STA.w VScrollBufSize
 
-	LDA.w CamX
-	AND.w #$7FF				; clamp
+	LDA.w HScrollSeam
+	AND.w #$7F0				; clamp
 	; Locate the horizontal chunk seam
 	; Get the block ID of when to switch drawing to a different chunk
 	LSR : LSR : LSR : LSR
 	SEP #$30				; AXY 8-bit
-	SEC : SBC #$08			; push it 8 blocks away from the camera
+	;SEC : SBC #$08			; push it 8 blocks away from the camera
 	EOR #$1F				; negate
+	INC
 	AND #$1F				; clamp
 	STA.b Render_SOffset	; store
 	STA.b $50
@@ -391,14 +404,18 @@ DrawTilemapRow:
 	AND #$02				; get the current chunk index
 	STA $00					; save the chunk ID here
 	
-	LDA CamX+1				; get the 512px high index
+	REP #$20
+	LDA.w HScrollSeam				; get the 512px high index
+	XBA
+	SEP #$20
+;	DEC
 	AND #$07
 	LSR
 	EOR $00			; get chunk ID
 	LDY.b Render_SOffset
 	CPY #$08
 	BMI +
-	INC						; start drawing with a previous chunk?
+;	INC						; start drawing with a previous chunk?
 +	AND #$03
 	STA.b Render_ChunkInd
 	REP #$30				; AXY 16-bit
@@ -410,9 +427,31 @@ DrawTilemapRow:
 	SEP #$20				; A 8-bit
 	LDA #$21				; $20 tiles to draw (+1 for initial dec)
 	STA.b Render_TileX
+
+	; if chunk seam is at 0
+	LDA.b Render_SOffset
+	BNE +
+	LDA.b Render_ChunkInd
+	DEC
+	AND #$03
+	STA.b Render_ChunkInd
+	REP #$20
+	PHA
+	LDA.b Render_DataPtr
+	AND #$03FF
+	STA.b Render_DataPtr
+	PLA
+	JSR Render_UpdatePtrs
+	LDA #$0000
+	SEP #$20
++
+
+
 .tile_loop
 	DEC.b Render_TileX
-	BEQ .end				; if x = 0, we are done boys
+	BNE .notend				; if x = 0, we are done boys
+	JMP .end
+.notend
 	LDA.b Render_TileX
 	CMP #$10				; if x = 10, switch to the other plane
 	BNE +
@@ -429,6 +468,7 @@ DrawTilemapRow:
 	LDA.b Render_ChunkInd
 	DEC
 	AND #$03
+	STA.b Render_ChunkInd
 	REP #$20
 	PHA
 	LDA.b Render_DataPtr
