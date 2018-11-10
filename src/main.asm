@@ -214,3 +214,4 @@ incsrc "renderer/level.asm"
 
 incsrc "objects/objectmgr.asm"
 incsrc "objects/bouncy_flower.asm"
+incsrc "objects/debug_ctlr.asm"

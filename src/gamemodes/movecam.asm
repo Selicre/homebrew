@@ -126,9 +126,9 @@ GM_LevelInit:
 	JSL InitObjMgr
 
 	; Spawn one object
-	LDA.w #ObjBouncyFlower
+	LDA.w #ObjDebugCtlr
 	STA $1000
-	LDA.w #ObjBouncyFlower>>8
+	LDA.w #ObjDebugCtlr>>8
 	STA $1001
 
 	LDA.w #$0080
@@ -136,11 +136,11 @@ GM_LevelInit:
 	LDA.w #$0040
 	STA $1000+obj_YPos
 
-	; Spawn one object
-	LDA.w #ObjBouncyFlower
-	STA $1040
-	LDA.w #ObjBouncyFlower>>8
-	STA $1041
+	; Spawn another object
+	;LDA.w #ObjBouncyFlower
+	;STA $1040
+	;LDA.w #ObjBouncyFlower>>8
+	;STA $1041
 
 	LDA.w #$0100
 	STA $1040+obj_XPos
@@ -228,7 +228,7 @@ GM_Level:
 	; Scroll the thing
 	JSL InitVRAMBuffers
 	REP #$30
-
+	JMP .no_debug
 	; Controller stuff
 	LDA.w JOY1
 	BIT #$0F00				; If no controller buttons are held..
@@ -288,6 +288,14 @@ GM_Level:
 	STA.b CamY
 	TXA
 +
+.no_debug:
+	; Follow object 0
+	LDA.w ObjectTable+obj_XPos
+	SEC : SBC #$0080
+	STA.b CamX
+	LDA.w ObjectTable+obj_YPos
+	SEC : SBC #$0080
+	STA.b CamY
 
 	; Add camera borders
 	LDA.b CamX

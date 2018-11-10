@@ -7,8 +7,8 @@ ObjBouncyFlower:
 	STZ.b obj_YSpeed
 	STZ.b obj_XSpeed
 	STZ.b obj_YSubpx
-	;LDA.w #$0100
-	;STA.b obj_XSpeed
+	LDA.w #$0100
+	STA.b obj_XSpeed
 ObjBouncyFlowerMain:
 	; Update Y position
 	LDA.b obj_YSpeed

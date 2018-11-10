@@ -137,3 +137,17 @@ define JOY3H       $421D ; r
 define JOY4        $421E ; r, 16-bit
 define JOY4L       JOY4  ; r
 define JOY4H       $421F ; r
+
+define JOY_B       $8000
+define JOY_Y       $4000
+define JOY_Select  $2000
+define JOY_Start   $1000
+define JOY_Up      $0800
+define JOY_Down    $0400
+define JOY_Left    $0200
+define JOY_Right   $0100
+
+define JOY_A       $0080
+define JOY_X       $0040
+define JOY_L       $0020
+define JOY_R       $0010

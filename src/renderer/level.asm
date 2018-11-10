@@ -633,35 +633,41 @@ UploadScrollBuffer:
 	RTL
 
 
-; X/Y as pixel params, output: block ID in A, block collision in B
+; X/Y as pixel params, output: block ID in A, collision in B
 
 GetBlockAt:
 	PHX
 	PHY
+	LDA #$0000				; clear top of A
 	SEP #$20				; A 8-bit
 	LDA 2,s					; high byte of row
-	LSR
 	AND #$02				; get the current chunk index
-	STA.w $00				; save the chunk ID here
-	
-	LDA 4,s					; high byte of column
+	PEA $0000
+	STA 2,s					; save the partial chunk ID here
+
+	LDA 6,s					; high byte of column
 	LSR
-	EOR.w $00				; get chunk ID
-	REP #$20
 	AND #$03
-	XBA
+	EOR 2,s				; get chunk ID
+	
+	STA $005A
+	
 	ASL : ASL
-	PHA
+	STA 2,s
+	REP #$20
+
 	LDA 3,s					; row
-	AND #$FFF0
+	AND #$1F0
 	ASL						; get Y block offset
 	STA 3,s
+
 	LDA 5,s					; column
 	LSR : LSR : LSR : LSR
 	AND #$001F				; clamp to chunk
 	CLC : ADC 3,s
 	ORA 1,s					; add chunk coords
 	TAX
+	STX $0058
 	LDA.l LevelChunks,x
 	AND #$00FF
 	PLX
