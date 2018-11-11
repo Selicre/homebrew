@@ -76,33 +76,6 @@ ObjBouncyFlowerMain:
 	STA.b obj_YSpeed
 +
 
-.bounceX
-	LDA.b obj_XPos
-	CLC : ADC.w #$0010
-	TAX
-	LDA.b obj_YPos
-	;CLC : ADC.w #$0008
-	TAY
-	JSL GetBlockAt
-	CMP #$0000
-	BEQ ..nobounce
-
-	LDA.b obj_XPos
-	;CLC : ADC.w #$0010
-	TAX
-	LDA.b obj_YPos
-	;CLC : ADC.w #$0008
-	TAY
-	JSL GetBlockAt
-	CMP #$0000
-	BEQ ..nobounce
-
-	LDA.b obj_XSpeed
-	EOR #$FFFF : INC
-..noclamp
-	STA.b obj_XSpeed
-..nobounce
-
 	LDA.b obj_XPos
 	SEC : SBC.w CamX
 	TAX

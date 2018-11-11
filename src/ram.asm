@@ -73,7 +73,7 @@ define MetaUpPtr		$06			; Long pointer to the compressed ROM chunk data above
 define MetaDownPtr		$09			; .. below
 define MetaLeftPtr		$0C			; .. to the left
 define MetaRightPtr		$0F			; .. to the right
-define MetaCustomBlocks	$20			; Custom block table (renderer + collider longptr pairs)
+define MetaCustomBlocks	$20			; Custom block table (renderer + collider longptr pairs). Terminated by $FFFF.
 
 define LevelChunks		$7EB000		; Level buffers. These contain 32x32 chunks of level, which are reloaded dynamically
 define LevelChunk0		LevelChunks

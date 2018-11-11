@@ -1,5 +1,6 @@
 ; Object manager code - loads and processes all sprite-based objects on screen
 ; Object data is stored progressively. Object code can access it via direct page.
+; A simple object's X/Y position is the top left of its collision box.
 
 ; Common offsets
 
@@ -13,7 +14,9 @@ define obj_Width	$0E		; byte
 define obj_Height	$0F		; byte
 define obj_XSpeed	$10
 define obj_YSpeed	$12
-define obj_Scratch	$14
+define obj_GSpeed	$14
+define obj_OnGround	$16
+define obj_Angle	$18
 
 ; Call this to process objects.
 
@@ -58,6 +61,15 @@ InitObjMgr:
 	ADC.w #ObjectSize
 	CMP.w #ObjectTable+ObjectSize*ObjectTableLen
 	BNE -
+	RTL
+
+
+; This is a trampoline. Call it to pause object execution for a frame.
+; Note: could be a macro of `LDA.w #+ : STA.b obj_ID : RTL : +`
+ObjYield:
+	PLA
+	DEC
+	STA.b obj_ID
 	RTL
 
 

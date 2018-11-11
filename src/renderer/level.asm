@@ -7,7 +7,7 @@
 ; This allows for efficient rendering of both horizontal and vertical levels (although a separate vertical mode may be introduced).
 ; Note that just `1234` is already 25% of the original SMW level size.
 
-define Render_TileXY	$00
+define Render_Tile		$00		; Current tile index (16-bit)
 define Render_TileX		$00		; Current x tile index
 define Render_TileY		$01		; Current y tile index
 define Render_DataPtr	$02		; Pointer to level data
@@ -49,7 +49,7 @@ DrawStartingTilemap:
 	REP #$10				; XY 16-bit
 	; TODO: rewrite to only use one counter?
 	LDX #$2010
-	STX.b Render_TileXY		; initialize counters to 32x16 of blocks left to draw
+	STX.b Render_Tile		; initialize counters to 32x16 of blocks left to draw
 	; init index into chunk
 	LDX #$0000
 	BRA .loop_entry
@@ -170,8 +170,7 @@ Render_UpdatePtrs:
 	RTS
 
 ; Horizontal scrolling routine
-; A is the column offset
-; TODO: pull seams from elsewhere
+; A is the column offset.
 
 DrawTilemapColumn:
 	; Set the DBR to the RAM
@@ -179,12 +178,11 @@ DrawTilemapColumn:
 	PEA $7E00
 	PLB #2
 	
-	;CLC : ADC.w CamX		; get the rendered column camera position
-	;AND.w #$7F0				; clamp and coarse
 	AND.w #$7F0
 	PHA						; stack +2
 
-	; WE NEED: DataPtr, Render_SOffset
+	; GET VRAM TARGET
+
 	LSR						; get tilemap VRAM address
 	LSR
 	LSR
@@ -202,21 +200,22 @@ DrawTilemapColumn:
 	LSR : LSR : LSR : LSR
 	AND.w #$001F			; get block position
 	STA.w Render_DataPtr
-	
+
+	; GET SCROLL SEAM POSITIONING
 
 	LDA.w VScrollSeam
-	SEC : SBC.w #$0100
-	AND.w #$7F0				; clamp and coarse
-	;SEC : SBC #$0010		; push it 1 block away from the camera
-	PHA						; stack +2
+	SEC : SBC.w #$0100		; TODO: make the scroll seam itself save like this
+	AND.w #$7F0				; clamp
+	PHA						; save
 	LSR : LSR : LSR : LSR
 	SEP #$20				; A 8-bit
 	EOR #$0F				; negate
+	AND #$0F				; clamp to 1..10
 	INC
-	AND #$0F				; clamp
 	STA.b Render_SOffset	; store
-	STA.b $52
-	
+
+	; GET CURRENT CHUNK
+
 	LDA 2,s
 	AND #$02				; get the current chunk index
 	STA $00					; save the chunk ID here
@@ -227,66 +226,55 @@ DrawTilemapColumn:
 	EOR $00			; get chunk ID
 	STA.b Render_ChunkInd
 
+	; GET WHETHER TO CHANGE THE CHUNK
 
 	LDY.w #.changeChunk
-	LDA 2,s				; high byte of rendered row
+	LDA 2,s					; high byte of rendered row
 	BIT #$01
 	BNE +
+	; Keep the chunk
 	REP #$20
 	LDA.w Render_DataPtr
-	CLC : ADC.w #$0200					; start from bottom row
+	CLC : ADC.w #$0200		; start from bottom row
 	STA.w Render_DataPtr
-	STA.b $54
 	SEP #$20
 	LDY.w #.keepChunk
 	BRA ++
 +
-	;REP #$20
-	;LDA.b Render_DataPtr
-	;AND.w #$01FF
-	;STA.b Render_DataPtr
-	;SEP #$20
+	; Change the chunk
 	LDA.b Render_ChunkInd
 	EOR #$02
 	STA.b Render_ChunkInd
 ++	STY.w Render_SeamChg
 
-	LDA.b #$00
-	XBA
-	LDA.b Render_ChunkInd
 	REP #$30
+	LDA.b Render_ChunkInd
+	AND.w #$00FF
 	JSR Render_UpdatePtrs
-	LDA.w #$0000
+	
 	LDX.w VRAMBufferPtr		; Index into VRAMBuffer
 	STX.w HScrollBufPtr
-	SEP #$20				; A 8-bit
-	LDA #$11				; $10 tiles to draw (+1 for initial dec)
-	STA.b Render_TileY
 
-	; Test if we need to change the seam right now
+	LDA.w Render_SOffset	; TODO: move this onto the stack to begin with
+	AND.w #$00FF
+	PHA
 
-	LDA.b Render_SOffset
-	BNE +
-	PEA.w ..end-1			; DIY JSR
-	JMP (Render_SeamChg)
-..end
-+
+	LDA.w #$0010			; $10 tiles to draw
+	STA.b Render_Tile
 
 .tile_loop
-	DEC.b Render_TileY
-	BEQ .end				; if x = 0, we are done boys
-	LDA.b Render_TileY
-	CMP.b Render_SOffset	; if x = chunk seam..
-	BNE ..end
-	PEA.w ..end-1			; DIY JSR
-	JMP (Render_SeamChg)
-..end
+	BEQ .end				; Jumped to with flags from DEC.b Render_Tile
+	LDA.b Render_Tile
+	CMP.b 1,s				; if x = chunk seam..
+	BEQ .seamchg
+.after_seamchg
 	; Get block mappings
+	SEP #$20				; A 8-bit
 	LDA.b (Render_DataPtr)
+	REP #$20				; A 16-bit
 	BMI .use_subtable
 	ASL
 	TAY
-	REP #$20				; A 16-bit
 	LDA.b [Render_BlkPtrM0],y	; the buffer is transposed
 	STA.w $00,x
 	LDA.b [Render_BlkPtrM2],y
@@ -299,14 +287,12 @@ DrawTilemapColumn:
 	CLC : ADC.w #$0020
 	STA.b Render_DataPtr
 	INX.b #4
-	LDA #$0000
-	SEP #$20				; A 8-bit
+	DEC.b Render_Tile
 	BRA .tile_loop
 
 .use_subtable
 	ASL
 	TAY
-	REP #$20				; A 16-bit
 	LDA.b [Render_BlkPtrS0],y
 	STA.w $00,x
 	LDA.b [Render_BlkPtrS2],y
@@ -319,9 +305,10 @@ DrawTilemapColumn:
 	CLC : ADC.w #$0010
 	STA.b Render_DataPtr
 	INX.b #4
-	LDA #$0000
-	SEP #$20				; A 8-bit
+	DEC.b Render_Tile
 	BRA .tile_loop
+.seamchg
+	JMP (Render_SeamChg)
 .end
 	REP #$30
 	TXA
@@ -329,35 +316,30 @@ DrawTilemapColumn:
 	STA.w VRAMBufferPtr		; save the VRAM offset
 	PLA						; stack -2
 	PLA						; stack -2
+	PLA						; stack -2
 	PLB
 	RTL
 .changeChunk:
-	REP #$20
 	LDA.w Render_DataPtr
 	AND #$01FF					; clamp
 	STA.w Render_DataPtr
-	SEP #$20
 	LDA.b Render_ChunkInd
-	EOR #$02
-	REP #$20
+	EOR #$0002
 
-	;AND #$00FF
+	AND #$00FF
 	JSR Render_UpdatePtrs
 	LDA.w Render_DataPtr
 	CLC : ADC.w #$0200					; start from bottom row
 	STA.w Render_DataPtr
 	LDA #$0000
-	SEP #$20
-	RTS
+	JMP .after_seamchg
 
 .keepChunk:
-	REP #$20
 	LDA.w Render_DataPtr
 	SEC : SBC.w #$0200					; start from bottom row
 	STA.w Render_DataPtr
 	LDA #$0000
-	SEP #$20
-	RTS
+	JMP .after_seamchg
 
 
 ; Vertical scrolling routine
@@ -371,12 +353,11 @@ DrawTilemapRow:
 	PEA $7E00
 	PLB #2
 
-;	CLC : ADC.w CamY		; get the rendered row camera position
-;	AND.w #$7FF				; clamp
 	AND.w #$7F0
 	PHA						; stack +2
 
-	;LDA 1,s				; Get the row
+	; GET VRAM TARGET
+
 	AND #$01F0
 	ASL
 	STA.w Render_DataPtr	; get chunk
@@ -387,104 +368,62 @@ DrawTilemapRow:
 	LDA #$0080				; for now, only $80 (one row) is supported
 	STA.w VScrollBufSize
 
+	; GET SEAM POSITION
+
 	LDA.w HScrollSeam
 	AND.w #$7F0				; clamp
 	; Locate the horizontal chunk seam
-	; Get the block ID of when to switch drawing to a different chunk
-	LSR : LSR : LSR : LSR
+	LSR : LSR : LSR : LSR	; this cleans top of A
 	SEP #$30				; AXY 8-bit
-	;SEC : SBC #$08			; push it 8 blocks away from the camera
 	EOR #$1F				; negate
+	AND #$1F				; clamp	to 1..20
 	INC
-	AND #$1F				; clamp
 	STA.b Render_SOffset	; store
-	STA.b $50
+
+	; GET CHUNK INDEX
 
 	LDA 2,s					; high byte of rendered row
 	AND #$02				; get the current chunk index
 	STA $00					; save the chunk ID here
 	
-	REP #$20
-	LDA.w HScrollSeam				; get the 512px high index
-	XBA
-	SEP #$20
-;	DEC
+	LDA.w HScrollSeam+1		; get the chunk index
 	AND #$07
 	LSR
 	EOR $00			; get chunk ID
-	LDY.b Render_SOffset
-	CPY #$08
-	BMI +
-;	INC						; start drawing with a previous chunk?
-+	AND #$03
 	STA.b Render_ChunkInd
-	REP #$30				; AXY 16-bit
+
+	REP #$30				; AXY 16-bit, top of A clear
 	JSR Render_UpdatePtrs
+
+	LDA.w Render_SOffset	; TODO: move this onto the stack to begin with
+	AND.w #$00FF
+	PHA
 
 	LDX.w VRAMBufferPtr		; Index into VRAMBuffer
 	STX.w VScrollBufPtr
-	LDA #$0000
-	SEP #$20				; A 8-bit
-	LDA #$21				; $20 tiles to draw (+1 for initial dec)
-	STA.b Render_TileX
-
-	; if chunk seam is at 0
-	LDA.b Render_SOffset
-	BNE +
-	LDA.b Render_ChunkInd
-	DEC
-	AND #$03
-	STA.b Render_ChunkInd
-	REP #$20
-	PHA
-	LDA.b Render_DataPtr
-	AND #$03FF
-	STA.b Render_DataPtr
-	PLA
-	JSR Render_UpdatePtrs
-	LDA #$0000
-	SEP #$20
-+
-
+	LDA #$0020				; $20 tiles to draw
+	STA.b Render_Tile
 
 .tile_loop
-	DEC.b Render_TileX
-	BNE .notend				; if x = 0, we are done boys
-	JMP .end
-.notend
-	LDA.b Render_TileX
-	CMP #$10				; if x = 10, switch to the other plane
+	BEQ .end				; jumped to from DEC.b Render_Tile
+	LDA.b Render_Tile
+	CMP #$0010				; if x = 10, switch to the other plane
 	BNE +
-	REP #$20				; A 16-bit
 	TXA
 	CLC : ADC #$0040		; switch plane
 	TAX
-	LDA #$0000
-	SEP #$20
-	LDA.b Render_TileX
+	LDA.b Render_Tile
 +
-	CMP.b Render_SOffset	; if x = chunk seam..
-	BNE +
-	LDA.b Render_ChunkInd
-	DEC
-	AND #$03
-	STA.b Render_ChunkInd
-	REP #$20
-	PHA
-	LDA.b Render_DataPtr
-	AND #$03FF
-	STA.b Render_DataPtr
-	PLA
-	JSR Render_UpdatePtrs
-	LDA #$0000
-	SEP #$20
-+
+	CMP 1,s					; if x = chunk seam..
+	BEQ .seam				; optimize for branch not taken - saves 20 - 3 = 17 cycles
+.seam_ret
 	; Get block mappings
+	SEP #$20
 	LDA.b (Render_DataPtr)
+	REP #$20
 	BMI .use_subtable
 	ASL
 	TAY
-	REP #$20				; A 16-bit
 	LDA.b [Render_BlkPtrM0],y
 	STA.w $00,x
 	LDA.b [Render_BlkPtrM2],y
@@ -495,14 +434,11 @@ DrawTilemapRow:
 	STA.w $42,x
 	INC.b Render_DataPtr
 	INX.b #4
-	LDA #$0000
-	SEP #$20				; A 8-bit
+	DEC.b Render_Tile
 	BRA .tile_loop
-
 .use_subtable
 	ASL
 	TAY
-	REP #$20				; A 16-bit
 	LDA.b [Render_BlkPtrS0],y
 	STA.w $00,x
 	LDA.b [Render_BlkPtrS2],y
@@ -513,14 +449,29 @@ DrawTilemapRow:
 	STA.w $42,x
 	INC.b Render_DataPtr
 	INX.b #4
-	LDA #$0000
-	SEP #$20				; A 8-bit
+	DEC.b Render_Tile
 	BRA .tile_loop
+.seam
+	SEP #$20
+	LDA.b Render_ChunkInd
+	DEC
+	AND #$03
+	STA.b Render_ChunkInd
+	REP #$20
+	PHA
+	LDA.b Render_DataPtr
+	AND #$03FF
+	STA.b Render_DataPtr
+	PLA
+	JSR Render_UpdatePtrs
+	LDA #$0000
+	BRA .seam_ret
 .end
 	REP #$30
 	TAX
 	ADC.w #$0040			; seek to end of buffer
 	STA.w VRAMBufferPtr		; save the VRAM offset
+	PLA						; stack -2
 	PLA						; stack -2
 	PLB
 	RTL
@@ -636,6 +587,7 @@ UploadScrollBuffer:
 ; X/Y as pixel params, output: block ID in A, collision in B
 
 GetBlockAt:
+	PHY
 	PHX
 	PHY
 	LDA #$0000				; clear top of A
@@ -659,7 +611,7 @@ GetBlockAt:
 	LDA 3,s					; row
 	AND #$1F0
 	ASL						; get Y block offset
-	STA 3,s
+	STA 3,s					; todo: maybe try to do it without this?
 
 	LDA 5,s					; column
 	LSR : LSR : LSR : LSR
@@ -671,6 +623,7 @@ GetBlockAt:
 	LDA.l LevelChunks,x
 	AND #$00FF
 	PLX
+	PLY
 	PLX
 	PLY
 	RTL

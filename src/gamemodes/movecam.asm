@@ -137,10 +137,10 @@ GM_LevelInit:
 	STA $1000+obj_YPos
 
 	; Spawn another object
-	;LDA.w #ObjBouncyFlower
-	;STA $1040
-	;LDA.w #ObjBouncyFlower>>8
-	;STA $1041
+	LDA.w #ObjBouncyFlower
+	STA $1040
+	LDA.w #ObjBouncyFlower>>8
+	STA $1041
 
 	LDA.w #$0100
 	STA $1040+obj_XPos
