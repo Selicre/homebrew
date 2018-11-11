@@ -261,9 +261,9 @@ DrawTilemapColumn:
 	; Get block mappings
 	SEP #$20				; A 8-bit
 	LDA.b [Render_DataPtr]
-	REP #$20				; A 16-bit
 	BMI .use_subtable
 	ASL
+	REP #$20				; A 16-bit
 	TAY
 	LDA.b (Render_BlkPtrM0),y
 	STA.l $7E0000,x
@@ -276,12 +276,12 @@ DrawTilemapColumn:
 	LDA.b Render_DataPtr
 	CLC : ADC.w #$0020
 	STA.b Render_DataPtr
-	INX.b #4
+	TXA : ADC.w #$0004 : TAX
 	DEC.b Render_Tile
 	BRA .tile_loop
-
 .use_subtable
 	ASL
+	REP #$20				; A 16-bit
 	TAY
 	LDA.b (Render_BlkPtrS0),y
 	STA.l $7E0000,x
@@ -292,9 +292,9 @@ DrawTilemapColumn:
 	LDA.b (Render_BlkPtrS6),y
 	STA.l $7E0042,x
 	LDA.b Render_DataPtr
-	CLC : ADC.w #$0020
+	ADC.w #$0020
 	STA.b Render_DataPtr
-	INX.b #4
+	TXA : ADC.w #$0004 : TAX
 	DEC.b Render_Tile
 	BRA .tile_loop
 .seamchg
@@ -400,14 +400,14 @@ DrawTilemapRow:
 	LDA.b Render_Tile
 +
 	CMP.b Render_SOffset	; if x = chunk seam..
-	BEQ .seam				; optimize for branch not taken - saves 20 - 3 = 17 cycles
+	BEQ .seam				; optimize for branch not taken
 .seam_ret
 	; Get block mappings
 	SEP #$20
 	LDA.b [Render_DataPtr]
-	REP #$20
 	BMI .use_subtable
 	ASL
+	REP #$20
 	TAY
 	LDA.b (Render_BlkPtrM0),y
 	STA.l $7E0000,x
@@ -418,11 +418,12 @@ DrawTilemapRow:
 	LDA.b (Render_BlkPtrM6),y
 	STA.l $7E0042,x
 	INC.b Render_DataPtr
-	INX.b #4
+	TXA : ADC #$0004 : TAX
 	DEC.b Render_Tile
 	BRA .tile_loop
 .use_subtable
 	ASL
+	REP #$20
 	TAY
 	LDA.b (Render_BlkPtrS0),y
 	STA.l $7E0000,x
@@ -433,9 +434,17 @@ DrawTilemapRow:
 	LDA.b (Render_BlkPtrS6),y
 	STA.l $7E0042,x
 	INC.b Render_DataPtr
-	INX.b #4
+	TXA : ADC #$0004 : TAX
 	DEC.b Render_Tile
 	BRA .tile_loop
+.end
+	REP #$30
+	TAX
+	ADC.w #$0040			; seek to end of buffer
+	STA.w VRAMBufferPtr		; save the VRAM offset
+	PLA						; stack -2
+	PLB
+	RTL
 .seam
 	SEP #$20
 	LDA.b Render_ChunkInd
@@ -451,14 +460,6 @@ DrawTilemapRow:
 	JSR Render_UpdatePtrs
 	LDA #$0000
 	BRA .seam_ret
-.end
-	REP #$30
-	TAX
-	ADC.w #$0040			; seek to end of buffer
-	STA.w VRAMBufferPtr		; save the VRAM offset
-	PLA						; stack -2
-	PLB
-	RTL
 
 
 UploadBuffer:
