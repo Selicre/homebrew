@@ -172,6 +172,8 @@ Render_UpdatePtrs:
 ; Horizontal scrolling routine
 ; A is the column offset.
 
+; Costs 19666 cycles when changing chunks, 18138 when not.
+
 DrawTilemapColumn:
 	; Set the DBR to the RAM
 	PHB
@@ -345,7 +347,8 @@ DrawTilemapColumn:
 ; Vertical scrolling routine
 ; Put the camera offset to redraw in A (should be divisible by $10) - e.g. $F0 for scrolling downward.
 ; TODO: optimize it to where it only draws the visible part.
-; TODO: fetch the seams from elsewhere
+
+; Costs 33470 cycles.
 
 DrawTilemapRow:
 	; Set the DBR to the RAM
