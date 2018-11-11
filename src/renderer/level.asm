@@ -296,13 +296,13 @@ DrawTilemapColumn:
 	ASL
 	TAY
 	LDA.b [Render_BlkPtrS0],y
-	STA.w $00,x
+	STA.w $0000,x
 	LDA.b [Render_BlkPtrS2],y
-	STA.w $40,x
+	STA.w $0040,x
 	LDA.b [Render_BlkPtrS4],y
-	STA.w $02,x
+	STA.w $0002,x
 	LDA.b [Render_BlkPtrS6],y
-	STA.w $42,x
+	STA.w $0042,x
 	LDA.b Render_DataPtr
 	CLC : ADC.w #$0010
 	STA.b Render_DataPtr
@@ -428,13 +428,13 @@ DrawTilemapRow:
 	ASL
 	TAY
 	LDA.b [Render_BlkPtrM0],y
-	STA.w $00,x
+	STA.w $0000,x
 	LDA.b [Render_BlkPtrM2],y
-	STA.w $02,x
+	STA.w $0002,x
 	LDA.b [Render_BlkPtrM4],y
-	STA.w $40,x
+	STA.w $0040,x
 	LDA.b [Render_BlkPtrM6],y
-	STA.w $42,x
+	STA.w $0042,x
 	INC.b Render_DataPtr
 	INX.b #4
 	DEC.b Render_Tile
