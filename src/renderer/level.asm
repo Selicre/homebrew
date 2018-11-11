@@ -10,17 +10,17 @@
 define Render_Tile		$00		; Current tile index (16-bit)
 define Render_TileX		$00		; Current x tile index
 define Render_TileY		$01		; Current y tile index
-define Render_DataPtr	$02		; Pointer to level data
+define Render_DataPtr	$18		; Long pointer to level data
 define Render_ChunkInd	$04		; Chunk index
 define Render_SOffset	$05		; Seam offset
-define Render_BlkPtrM0	$08		; Long pointer to main block mappings
-define Render_BlkPtrM2	$0B		; + 3
-define Render_BlkPtrM4	$0E		; + 6
-define Render_BlkPtrM6	$11		; + 9
-define Render_BlkPtrS0	$14		; Same but for sub block mappings
-define Render_BlkPtrS2	$17
-define Render_BlkPtrS4	$1A
-define Render_BlkPtrS6	$1D
+define Render_BlkPtrM0	$08		; Word pointer to main block mappings
+define Render_BlkPtrM2	$0A
+define Render_BlkPtrM4	$0C
+define Render_BlkPtrM6	$0E
+define Render_BlkPtrS0	$10		; Same but for sub block mappings
+define Render_BlkPtrS2	$12
+define Render_BlkPtrS4	$14
+define Render_BlkPtrS6	$16
 
 define Render_SeamChg	$0F20	; This location will be invalidated by the routine, so it's fine to reuse it
 
@@ -33,10 +33,7 @@ define Render_SeamChg	$0F20	; This location will be invalidated by the routine, 
 
 #[bank(03)]
 DrawStartingTilemap:
-	; Set the DBR to the RAM
 	PHB
-	PEA $7E00
-	PLB #2
 	PHP
 	REP #$20				; A 16-bit
 	STZ.b Render_DataPtr
@@ -75,19 +72,19 @@ DrawStartingTilemap:
 	; Get block mappings
 
 .loop_entry
-	LDA.b (Render_DataPtr)
+	LDA.b [Render_DataPtr]
 	BMI	.use_subtable
 	ASL
 	TAY
 	REP #$20				; A 16-bit
-	LDA.b [Render_BlkPtrM0],y
-	STA.w VRAMBuffer+$00,x
-	LDA.b [Render_BlkPtrM2],y
-	STA.w VRAMBuffer+$02,x
-	LDA.b [Render_BlkPtrM4],y
-	STA.w VRAMBuffer+$40,x
-	LDA.b [Render_BlkPtrM6],y
-	STA.w VRAMBuffer+$42,x
+	LDA.b (Render_BlkPtrM0),y
+	STA.l VRAMBuffer+$00,x
+	LDA.b (Render_BlkPtrM2),y
+	STA.l VRAMBuffer+$02,x
+	LDA.b (Render_BlkPtrM4),y
+	STA.l VRAMBuffer+$40,x
+	LDA.b (Render_BlkPtrM6),y
+	STA.l VRAMBuffer+$42,x
 	INC.b Render_DataPtr
 	INX.b #4
 	LDA #$0000
@@ -98,14 +95,14 @@ DrawStartingTilemap:
 	ASL
 	TAY
 	REP #$20				; A 16-bit
-	LDA.b [Render_BlkPtrS0],y
-	STA.w VRAMBuffer+$00,x
-	LDA.b [Render_BlkPtrS2],y
-	STA.w VRAMBuffer+$02,x
-	LDA.b [Render_BlkPtrS4],y
-	STA.w VRAMBuffer+$40,x
-	LDA.b [Render_BlkPtrS6],y
-	STA.w VRAMBuffer+$42,x
+	LDA.b (Render_BlkPtrS0),y
+	STA.l VRAMBuffer+$00,x
+	LDA.b (Render_BlkPtrS2),y
+	STA.l VRAMBuffer+$02,x
+	LDA.b (Render_BlkPtrS4),y
+	STA.l VRAMBuffer+$40,x
+	LDA.b (Render_BlkPtrS6),y
+	STA.l VRAMBuffer+$42,x
 	INC.b Render_DataPtr
 	INX.b #4
 	SEP #$20				; A 8-bit
@@ -125,37 +122,32 @@ Render_UpdatePtrs:
 	ASL						; << 1 - Basically, make X go in $200 increments
 	PHA
 	TAX
-	LDA.w LevelMeta+MetaBlockPtr,x		; A now contains the word pointer to main level data
-	LDY.w LevelMeta+MetaBlockPtr+2,x		; Y now contains the bank
-	CLC
+	LDA.l LevelMeta+MetaBlockPtr+2,x		; Y now contains the bank
+	TAY
 	SEP #$10				; XY 8-bit
+	PHY
+	PLB
+	LDA.l LevelMeta+MetaBlockPtr,x		; A now contains the word pointer to main level data
+
+	CLC
 	STA.b Render_BlkPtrM0
-	STY.b Render_BlkPtrM0+2
 	ADC.w #$0100			; Add $100 to each pointer
 	STA.b Render_BlkPtrM2
-	STY.b Render_BlkPtrM2+2
 	ADC.w #$0100
 	STA.b Render_BlkPtrM4
-	STY.b Render_BlkPtrM4+2
 	ADC.w #$0100
 	STA.b Render_BlkPtrM6
-	STY.b Render_BlkPtrM6+2
 
-	LDA.w LevelMeta+MetaSubBlockPtr,x		; A now contains the word pointer to main level data
-	LDY.w LevelMeta+MetaSubBlockPtr+2,x		; Y now contains the bank
+	LDA.l LevelMeta+MetaSubBlockPtr,x		; A now contains the word pointer to main level data
 	CLC
-	SEP #$10				; XY 8-bit
+
 	STA.b Render_BlkPtrS0
-	STY.b Render_BlkPtrS0+2
 	ADC.w #$0100			; Add $100 to each pointer
 	STA.b Render_BlkPtrS2
-	STY.b Render_BlkPtrS2+2
 	ADC.w #$0100
 	STA.b Render_BlkPtrS4
-	STY.b Render_BlkPtrS4+2
 	ADC.w #$0100
 	STA.b Render_BlkPtrS6
-	STY.b Render_BlkPtrS6+2
 	PLA
 	ASL						; << 2 - $400 increments
 	ORA.w #LevelChunks
@@ -163,6 +155,8 @@ Render_UpdatePtrs:
 	LDA.b Render_DataPtr
 	ORA 1,s
 	STA.b Render_DataPtr
+	LDA #$007E
+	STA.b Render_DataPtr+2
 	PLA
 	PLP
 	PLX
@@ -175,11 +169,8 @@ Render_UpdatePtrs:
 ; Costs 19666 cycles when changing chunks, 18138 when not.
 
 DrawTilemapColumn:
-	; Set the DBR to the RAM
 	PHB
-	PEA $7E00
-	PLB #2
-	
+
 	AND.w #$7F0
 	PHA						; stack +2
 
@@ -215,6 +206,7 @@ DrawTilemapColumn:
 	AND #$0F				; clamp to 1..10
 	INC
 	STA.b Render_SOffset	; store
+	STZ.b Render_SOffset+1
 
 	; GET CURRENT CHUNK
 
@@ -257,34 +249,30 @@ DrawTilemapColumn:
 	LDX.w VRAMBufferPtr		; Index into VRAMBuffer
 	STX.w HScrollBufPtr
 
-	LDA.w Render_SOffset	; TODO: move this onto the stack to begin with
-	AND.w #$00FF
-	PHA
-
 	LDA.w #$0010			; $10 tiles to draw
 	STA.b Render_Tile
 
 .tile_loop
 	BEQ .end				; Jumped to with flags from DEC.b Render_Tile
 	LDA.b Render_Tile
-	CMP.b 1,s				; if x = chunk seam..
+	CMP.b Render_SOffset	; if x = chunk seam..
 	BEQ .seamchg
 .after_seamchg
 	; Get block mappings
 	SEP #$20				; A 8-bit
-	LDA.b (Render_DataPtr)
+	LDA.b [Render_DataPtr]
 	REP #$20				; A 16-bit
 	BMI .use_subtable
 	ASL
 	TAY
-	LDA.b [Render_BlkPtrM0],y	; the buffer is transposed
-	STA.w $00,x
-	LDA.b [Render_BlkPtrM2],y
-	STA.w $40,x
-	LDA.b [Render_BlkPtrM4],y
-	STA.w $02,x
-	LDA.b [Render_BlkPtrM6],y
-	STA.w $42,x
+	LDA.b (Render_BlkPtrM0),y
+	STA.l $7E0000,x
+	LDA.b (Render_BlkPtrM4),y
+	STA.l $7E0002,x
+	LDA.b (Render_BlkPtrM2),y
+	STA.l $7E0040,x
+	LDA.b (Render_BlkPtrM6),y
+	STA.l $7E0042,x
 	LDA.b Render_DataPtr
 	CLC : ADC.w #$0020
 	STA.b Render_DataPtr
@@ -295,16 +283,16 @@ DrawTilemapColumn:
 .use_subtable
 	ASL
 	TAY
-	LDA.b [Render_BlkPtrS0],y
-	STA.w $0000,x
-	LDA.b [Render_BlkPtrS2],y
-	STA.w $0040,x
-	LDA.b [Render_BlkPtrS4],y
-	STA.w $0002,x
-	LDA.b [Render_BlkPtrS6],y
-	STA.w $0042,x
+	LDA.b (Render_BlkPtrS0),y
+	STA.l $7E0000,x
+	LDA.b (Render_BlkPtrS4),y
+	STA.l $7E0002,x
+	LDA.b (Render_BlkPtrS2),y
+	STA.l $7E0040,x
+	LDA.b (Render_BlkPtrS6),y
+	STA.l $7E0042,x
 	LDA.b Render_DataPtr
-	CLC : ADC.w #$0010
+	CLC : ADC.w #$0020
 	STA.b Render_DataPtr
 	INX.b #4
 	DEC.b Render_Tile
@@ -316,7 +304,6 @@ DrawTilemapColumn:
 	TXA
 	ADC.w #$0040			; Seek to end of buffer
 	STA.w VRAMBufferPtr		; save the VRAM offset
-	PLA						; stack -2
 	PLA						; stack -2
 	PLA						; stack -2
 	PLB
@@ -353,8 +340,6 @@ DrawTilemapColumn:
 DrawTilemapRow:
 	; Set the DBR to the RAM
 	PHB
-	PEA $7E00
-	PLB #2
 
 	AND.w #$7F0
 	PHA						; stack +2
@@ -382,6 +367,7 @@ DrawTilemapRow:
 	AND #$1F				; clamp	to 1..20
 	INC
 	STA.b Render_SOffset	; store
+	STZ.b Render_SOffset+1
 
 	; GET CHUNK INDEX
 
@@ -398,10 +384,6 @@ DrawTilemapRow:
 	REP #$30				; AXY 16-bit, top of A clear
 	JSR Render_UpdatePtrs
 
-	LDA.w Render_SOffset	; TODO: move this onto the stack to begin with
-	AND.w #$00FF
-	PHA
-
 	LDX.w VRAMBufferPtr		; Index into VRAMBuffer
 	STX.w VScrollBufPtr
 	LDA #$0020				; $20 tiles to draw
@@ -417,24 +399,24 @@ DrawTilemapRow:
 	TAX
 	LDA.b Render_Tile
 +
-	CMP 1,s					; if x = chunk seam..
+	CMP.b Render_SOffset	; if x = chunk seam..
 	BEQ .seam				; optimize for branch not taken - saves 20 - 3 = 17 cycles
 .seam_ret
 	; Get block mappings
 	SEP #$20
-	LDA.b (Render_DataPtr)
+	LDA.b [Render_DataPtr]
 	REP #$20
 	BMI .use_subtable
 	ASL
 	TAY
-	LDA.b [Render_BlkPtrM0],y
-	STA.w $0000,x
-	LDA.b [Render_BlkPtrM2],y
-	STA.w $0002,x
-	LDA.b [Render_BlkPtrM4],y
-	STA.w $0040,x
-	LDA.b [Render_BlkPtrM6],y
-	STA.w $0042,x
+	LDA.b (Render_BlkPtrM0),y
+	STA.l $7E0000,x
+	LDA.b (Render_BlkPtrM2),y
+	STA.l $7E0002,x
+	LDA.b (Render_BlkPtrM4),y
+	STA.l $7E0040,x
+	LDA.b (Render_BlkPtrM6),y
+	STA.l $7E0042,x
 	INC.b Render_DataPtr
 	INX.b #4
 	DEC.b Render_Tile
@@ -442,14 +424,14 @@ DrawTilemapRow:
 .use_subtable
 	ASL
 	TAY
-	LDA.b [Render_BlkPtrS0],y
-	STA.w $00,x
-	LDA.b [Render_BlkPtrS2],y
-	STA.w $02,x
-	LDA.b [Render_BlkPtrS4],y
-	STA.w $40,x
-	LDA.b [Render_BlkPtrS6],y
-	STA.w $42,x
+	LDA.b (Render_BlkPtrS0),y
+	STA.l $7E0000,x
+	LDA.b (Render_BlkPtrS2),y
+	STA.l $7E0002,x
+	LDA.b (Render_BlkPtrS4),y
+	STA.l $7E0040,x
+	LDA.b (Render_BlkPtrS6),y
+	STA.l $7E0042,x
 	INC.b Render_DataPtr
 	INX.b #4
 	DEC.b Render_Tile
@@ -474,7 +456,6 @@ DrawTilemapRow:
 	TAX
 	ADC.w #$0040			; seek to end of buffer
 	STA.w VRAMBufferPtr		; save the VRAM offset
-	PLA						; stack -2
 	PLA						; stack -2
 	PLB
 	RTL
