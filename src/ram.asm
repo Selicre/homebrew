@@ -61,6 +61,7 @@ define ObjectTable		$1000		; Object status table.
 define ObjectTableLen	$20			; 32 sprites that can be loaded. You can change this
 define ObjectSize		$40			; $40 bytes per sprite.
 define ObjectTableSize	ObjectTableLen*ObjectSize
+define CollisionResp	$1800		; Collision response list; add your sprite index here to be solid
 
 ; $8000+: data
 define LevelMeta		$7EA800		; Chunk metadata.

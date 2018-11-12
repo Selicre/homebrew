@@ -570,6 +570,7 @@ UploadScrollBuffer:
 
 
 ; X/Y as pixel params, output: block ID in A, collision in B
+; Note: fairly expensive to call this one by one.
 
 GetBlockAt:
 	PHY
@@ -607,6 +608,9 @@ GetBlockAt:
 	STX $0058
 	LDA.l LevelChunks,x
 	AND #$00FF
+	BEQ +
+	ORA #$0100	; non-air block (TODO: look it up)
++
 	PLX
 	PLY
 	PLX

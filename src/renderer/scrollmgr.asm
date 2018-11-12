@@ -50,12 +50,12 @@ ScrollMgr:
 
 ScrollMgrInit:
 	LDA.b CamX
-	CLC : ADC.w #$0040	; $40px in front
+	CLC : ADC.w #$0140	; $40px in front
 	AND.w #$7F0
 	STA.w HScrollSeam
 
 	LDA.b CamY
-	SEC : SBC.w #$0010	; $10px below
+	CLC : ADC.w #$00E0	; $10px below
 	AND.w #$7F0
 	STA.w VScrollSeam
 	RTL

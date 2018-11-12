@@ -332,11 +332,11 @@ GM_Level:
 
 	; Draw the HUD
 	;BRA +
-	LDA.w CamX
+	LDA.w $1000+obj_XPos
 	LDX.w #$0028
 	LDY.w #$0010
 	JSR HexSpriteText
-	LDA.w CamY
+	LDA.w $1000+obj_YPos
 	LDX.w #$0028
 	LDY.w #$0018
 	JSR HexSpriteText

@@ -1,5 +1,5 @@
 
-ASM=/home/x10a94/Projects/Rust/piped-asm/target/release/piped-asm
+ASM=/home/x10a94/Projects/Rust/piped-asm/target/release/piped
 PALGEN=/home/x10a94/Projects/Rust/snesgfx/target/release/rsgfx pal
 
 OUTPUT=build/out.sfc

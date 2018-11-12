@@ -10,6 +10,7 @@ define obj_XPos		$06
 define obj_XSubpx	$08
 define obj_YPos		$0A
 define obj_YSubpx	$0C
+define obj_Size		$0E
 define obj_Width	$0E		; byte
 define obj_Height	$0F		; byte
 define obj_XSpeed	$10
@@ -70,8 +71,239 @@ ObjYield:
 	PLA
 	DEC
 	STA.b obj_ID
+	SEP #$20
+	PLA
+	REP #$20
 	RTL
 
+; Puts position after speed processing in X/Y.
+ProcessSpeed:
+	LDA.b obj_YSpeed
+	; Sign-extend
+	BPL +
+	ORA #$00FF
+	BRA ++
++
+	AND #$FF00
+++
+	XBA
+	CLC : ADC.b obj_YPos
+	TAY
+
+	LDA.b obj_XSpeed
+	BPL +
+	ORA #$00FF
+	BRA ++
++
+	AND #$FF00
+++
+	XBA
+	CLC : ADC.b obj_XPos
+	TAX
+	RTL
+
+; Gets collision data for 4 points that surround the sprite.
+; Output in scratch:
+; $00 $02
+; $04 $06
+; TODO: optimize 4 calls to one
+GetSimpleBoundingBox:
+	LDX.b obj_XPos
+	LDY.b obj_YPos
+	JSL GetBlockAt
+	STA.w $00
+	LDA.b obj_Width
+	AND.w #$00FF
+	CLC : ADC.b obj_XPos
+	TAX
+	JSL GetBlockAt
+	STA.w $02
+	LDA.b obj_Height
+	AND.w #$00FF
+	CLC : ADC.b obj_YPos
+	TAY
+	JSL GetBlockAt
+	STA.w $06
+	LDX.b obj_XPos
+	JSL GetBlockAt
+	STA.w $04
+	RTL
+
+
+; Applies speed. Uses simple box collision.
+; Uses callbacks to process custom blocks.
+; TODO: maybe set DP and use indexed?
+; PHD : LDX 1,s : LDA #$0000 : TCD : .. : PLD
+; Return value: a bitfield of udlr
+SimpleLayerCollision:
+	; Sideways
+	JSL ProcessSpeed
+	STX.w $00
+	STY.w $02
+	LDA.b obj_Size
+	AND.w #$FF00
+	XBA
+	STA.w $06	; width
+	LDA.b obj_Size
+	AND.w #$00FF
+	STA.w $08	; height
+	STZ.w $0A
+	LDA.b obj_XSpeed
+	BEQ .move_vertical
+	BMI .move_left
+	; Moving right
+	LDA.w $00
+	CLC : ADC.w $06
+	TAX
+	LDY.b obj_YPos
+	JSL GetBlockAt
+	STA.w $04
+	TYA
+	CLC : ADC.w $08
+	TAY
+	JSL GetBlockAt
+	ORA.w $04
+	BEQ .sync_xspeed
+	; collision happened, clamp velocity
+	TXA				; target block coords
+	AND.w #$FFF0
+	SEC : SBC.w $06
+	DEC
+	STA.b obj_XPos
+	STZ.b obj_XSpeed
+	LDA.w #%0001
+	TSB.w $0A
+	BRA .move_vertical
+.move_left
+	; Moving left
+	LDX.w $00
+	LDY.b obj_YPos
+	JSL GetBlockAt
+	STA.w $04
+	TYA
+	CLC : ADC.w $08
+	TAY
+	JSL GetBlockAt
+	ORA.w $04
+	BEQ .sync_xspeed
+	; collision happened, clamp velocity
+	TXA				; target block coords
+	AND.w #$FFF0
+	CLC : ADC #$0010
+	STA.b obj_XPos
+	STZ.b obj_XSpeed
+	LDA.w #%0010
+	TSB.w $0A
+	BRA .move_vertical
+.sync_xspeed
+	LDA.w $00
+	STA.b obj_XPos
+
+.move_vertical
+	LDA.b obj_YSpeed
+	BEQ .end
+	BMI .move_up
+	; Moving down
+	LDA.w $02
+	CLC : ADC.w $08
+	TAY
+	LDX.b obj_XPos
+	JSL GetBlockAt
+	STA.w $04
+	TXA
+	CLC : ADC.w $06
+	TAX
+	JSL GetBlockAt
+	ORA.w $04
+	BEQ .sync_yspeed
+	; collision happened, clamp velocity
+	TYA				; target block coords
+	AND.w #$FFF0
+	SEC : SBC.w $08
+	DEC
+	STA.b obj_YPos
+	STZ.b obj_YSpeed
+	LDA.w #%0100
+	TSB.w $0A
+	BRA .end
+.move_up
+	; Moving up
+	LDX.b obj_XPos
+	LDY.w $02
+	JSL GetBlockAt
+	STA.w $04
+	TXA
+	CLC : ADC.w $06
+	TAX
+	JSL GetBlockAt
+	ORA.w $04
+	BEQ .sync_yspeed
+	; collision happened, clamp velocity
+	TYA				; target block coords
+	AND.w #$FFF0
+	CLC : ADC.w #$0010
+	STA.b obj_YPos
+	STZ.b obj_YSpeed
+	LDA.w #%1000
+	TSB.w $0A
+	BRA .end
+.sync_yspeed
+	; TODO
+	LDA.w $02
+	STA.b obj_YPos
+.end
+	LDA.w $0A
+	RTL
+
+
+
+; Uses four-corner collision. Does not process collision response types or slopes yet.
+; Adjusts speed.
+
+FCCollision:
+	STZ.w $00
+	LDA.b obj_XPos
+	CLC : ADC.b obj_XSpeed
+	TAX
+	LDA.b obj_YPos
+	CLC : ADC.b obj_YSpeed
+	TAY
+	JSL GetBlockAt
+	XBA
+	TSB.w $00
+	LDA.b obj_Width
+	AND.w #$00FF
+	CLC : ADC.b obj_XPos
+	CLC : ADC.b obj_XSpeed
+	TAX
+	JSL GetBlockAt
+	XBA
+	ASL
+	TSB.w $00
+	LDA.b obj_Height
+	AND.w #$00FF
+	CLC : ADC.b obj_YPos
+	CLC : ADC.b obj_YSpeed
+	TAY
+	JSL GetBlockAt
+	XBA
+	ASL : ASL : ASL
+	TSB.w $00
+	LDA.b obj_XPos
+	CLC : ADC.b obj_XSpeed
+	TAX
+	JSL GetBlockAt
+	XBA
+	ASL : ASL
+	TSB.w $00
+	STZ.w $01
+	LDA.w $00
+	ASL
+	TAX
+;	JSR (FCCTable,x)
+	RTL
+
+;incsrc "objects/fcc.asm"
 
 ; Mappings format is an array of this, 5 bytes each:
 ; 00: signed x offset (byte)

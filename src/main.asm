@@ -5,10 +5,13 @@ incsrc "ram.asm"
 
 #[start]
 Start:
+	JML RealStart
+RealStart:
 	SEI				; disable interrupts
 	CLC : XCE		; switch to native mode
 	SEP #$30		; A and XY 8-bit
-	STZ.w MEMSEL		; slow rom access
+	LDA.b #$01
+	STA.w MEMSEL	; fast rom access
 	STZ.w MDMAEN	; \ disable any (H)DMA
 	STZ.w HDMAEN	; /
 	; disable joypad, set NMI and V/H count to 0
@@ -60,6 +63,8 @@ VBlank_DoNothingRTI:
 
 #[nmi]
 VBlank:
+	JML RealVBlank
+RealVBlank:
 	JMP (VBlankPtr)
 
 
@@ -200,6 +205,7 @@ LoadDataQueueVRAMColumn:
 	PLA
 	RTL
 
+#[brk]
 BRK:
 -	BRA -
 
