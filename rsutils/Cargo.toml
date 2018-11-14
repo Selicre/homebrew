@@ -1,0 +1,10 @@
+[package]
+name = "rsutils"
+version = "0.1.0"
+authors = ["x10A94 <hyperpone@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+snesgfx = { path = "../../Rust/snesgfx" }
+tiled = { path = "../../Rust/tiled" }
+image = "0.20"

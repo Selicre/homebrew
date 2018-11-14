@@ -223,6 +223,7 @@ BRK:
 incsrc "sprites.asm"
 incsrc "hdma.asm"
 
+incsrc "chunks.asm"
 incsrc "imagedata.asm"
 
 incsrc "runframe.asm"

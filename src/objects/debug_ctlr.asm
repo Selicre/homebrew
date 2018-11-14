@@ -140,7 +140,7 @@ ObjDebugCtlrMain:
 	LDA.b obj_RenderF
 ++
 	;        vhppccc
-	ORA.w #(%0010011 << 9) | $180
+	ORA.w #(%0010010 << 9) | $180
 	SEC
 	JSL AddSpriteTile
 

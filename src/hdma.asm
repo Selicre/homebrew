@@ -59,14 +59,14 @@ HDMAPaletteAddr:
 
 
 HDMAAddrBlock:
-	db $A4,$A4,$A4,$A4,$A4,$A4,$A4,$A4
-	db $A4,$A4,$A4,$A4,$A4,$A4,$A4,$A4
-	db $A4,$A4,$A4,$A4,$A4,$A4,$A4,$A4
-	db $A4,$A4,$A4,$A4,$A4,$A4,$A4,$A4
-	db $A4,$A4,$A4,$A4,$A4,$A4,$A4,$A4
-	db $A4,$A4,$A4,$A4,$A4,$A4,$A4,$A4
-	db $A4,$A4,$A4,$A4,$A4,$A4,$A4,$A4
-	db $A4,$A4,$A4,$A4,$A4,$A4,$A4,$A4
+	db $F4,$F4,$F4,$F4,$F4,$F4,$F4,$F4
+	db $F4,$F4,$F4,$F4,$F4,$F4,$F4,$F4
+	db $F4,$F4,$F4,$F4,$F4,$F4,$F4,$F4
+	db $F4,$F4,$F4,$F4,$F4,$F4,$F4,$F4
+	db $F4,$F4,$F4,$F4,$F4,$F4,$F4,$F4
+	db $F4,$F4,$F4,$F4,$F4,$F4,$F4,$F4
+	db $F4,$F4,$F4,$F4,$F4,$F4,$F4,$F4
+	db $F4,$F4,$F4,$F4,$F4,$F4,$F4,$F4
 
 
 HDMAPalette:

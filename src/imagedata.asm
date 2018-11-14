@@ -34,8 +34,9 @@ BlockMappings:
 	; a really fucking obscure error whenever it tried to save it to the
 	; previous filename. I'll rename it when I'm gonna be building this
 	; from a json file anyway
-	incbin "block_mappings2.bin"
+	incbin "../rsutils/mappings.bin"
 
 ; Uncompressed for now.
-Chunks0123:
-	incbin "chunks0123.bin"
+;Chunks0123:
+;	incbin "chunks0123.bin"
+incsrc "../rsutils/chunks.asm"

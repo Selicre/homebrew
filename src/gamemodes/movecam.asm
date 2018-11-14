@@ -91,16 +91,16 @@ Level_LoadQueue:
 	dw $0000, $4000
 	db $00
 	dl GFXLevelPal
-	dw $0000, $0080
-	db $00
-	dl GFXLevelPal
-	dw $0080, $0080
+	dw $0000, $0200
+	;db $00
+	;dl GFXLevelPal
+	;dw $0080, $0080
 	db $01
 	dl GFXLevelMap
 	dw $4000, $2000
-	db $03
-	dl Chunks0123
-	dw LevelChunks, $1000
+	;db $03
+	;dl Chunk_0000_0000+18
+	;dw LevelChunks, $400
 	db $FF
 
 #[bank(02)]
@@ -124,6 +124,7 @@ GM_LevelInit:
 	LDX.w #Level_LoadQueue
 	JSL LoadDataQueue
 	JSL InitObjMgr
+	JSL LoadInitialChunk
 
 	; Spawn one object
 	LDA.w #ObjDebugCtlr
@@ -214,9 +215,9 @@ GM_LevelInit:
 	STA.b Level_CamYStart
 	JSL ScrollMgrInit
 
-	LDA #$3100
+	LDA #$1F00
 	STA.b Level_CamXEnd
-	LDA #$3120
+	LDA #$1F20
 	STA.b Level_CamYEnd
 	LDA.w #GMID_Level-GamemodePtrs
 	STA.b Gamemode
@@ -351,6 +352,18 @@ GM_Level:
 +
 	
 	JSL ObjectMgr
+	LDA.w JOY1
+	AND.w Joypad1Prev
+	BIT.w #JOY_L
+	BEQ +
+	;JSL LoadChunkDownward
++
+	LDA.w JOY1
+	AND.w Joypad1Prev
+	BIT.w #JOY_R
+	BEQ +
+	JSL LoadChunkRightward
++
 
 	LDA.w JOY1
 	EOR.w #$FFFF

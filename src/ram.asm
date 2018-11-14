@@ -58,6 +58,8 @@ define VRAMBufferStart	$0F22		; Pointer to VRAM buffer which it's reset to every
 
 define Joypad1Prev		$0F24		; Previously held buttons.
 define Joypad2Prev		$0F26
+define ChunkLoaderX		$0F28		; Chunk loader's current offset
+define ChunkLoaderY		$0F2A
 
 ; $1000 - $1800: object status table
 define ObjectTable		$1000		; Object status table.
@@ -77,7 +79,7 @@ define MetaUpPtr		$06			; Long pointer to the compressed ROM chunk data above
 define MetaDownPtr		$09			; .. below
 define MetaLeftPtr		$0C			; .. to the left
 define MetaRightPtr		$0F			; .. to the right
-define MetaCustomBlocks	$20			; Custom block table (renderer + collider longptr pairs). Terminated by $FFFF.
+define MetaCustomBlocks	$20			; Custom block table (longptrs to renderer+collider table). Terminated by $FFFF.
 
 define LevelChunks		$7EB000		; Level buffers. These contain 32x32 chunks of level, which are reloaded dynamically
 define LevelChunk0		LevelChunks
