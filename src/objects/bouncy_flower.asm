@@ -21,7 +21,6 @@ ObjBouncyFlowerMain:
 +
 	JSL SimpleLayerCollision
 	PHA
-	;WDM #$00
 .bounceDown
 	AND.w #%0100
 	BEQ +

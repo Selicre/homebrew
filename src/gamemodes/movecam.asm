@@ -352,6 +352,13 @@ GM_Level:
 	
 	JSL ObjectMgr
 
+	LDA.w JOY1
+	EOR.w #$FFFF
+	STA.w Joypad1Prev
+	LDA.w JOY2
+	EOR.w #$FFFF
+	STA.w Joypad2Prev
+
 	RTS
 	; Draw the misc test sprites
 	LDA.w #$0080

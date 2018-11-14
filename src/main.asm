@@ -25,11 +25,22 @@ RealStart:
 	TCS
 
 	; Clean memory
-	LDX #$0000
--	INX
-	STZ $00,x
-	CPX #$05FF
-	BNE -
+	STZ.w WMADDL
+	STZ.w WMADDH
+	LDA #$8008
+.zero
+	STA $4300
+	LDA.w #.zero+1
+	STA $4302
+	LDA.w #(.zero+1)>>8
+	STA $4303
+	STZ $4305
+	SEP #$10
+	LDY #$01
+	STY.w MDMAEN
+	STY.w MDMAEN
+	REP #$10
+
 	; Set up gamemode
 	LDA #$0000
 	STA.b Gamemode

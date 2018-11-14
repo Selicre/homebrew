@@ -56,6 +56,9 @@ define VScrollBufTarget	$0F1E		; The VRAM address to start from
 define VRAMBufferPtr	$0F20		; Pointer to free-for-use VRAM buffer data.
 define VRAMBufferStart	$0F22		; Pointer to VRAM buffer which it's reset to every frame ($C000 by default).
 
+define Joypad1Prev		$0F24		; Previously held buttons.
+define Joypad2Prev		$0F26
+
 ; $1000 - $1800: object status table
 define ObjectTable		$1000		; Object status table.
 define ObjectTableLen	$20			; 32 sprites that can be loaded. You can change this

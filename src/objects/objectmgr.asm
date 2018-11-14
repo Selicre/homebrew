@@ -18,6 +18,8 @@ define obj_YSpeed	$12
 define obj_GSpeed	$14
 define obj_OnGround	$16
 define obj_Angle	$18
+define obj_RenderF	$1A		; render flags
+define obj_Anim		$1C		; animation frame
 
 ; Call this to process objects.
 

@@ -87,7 +87,7 @@ define APUI03      $2143 ; rw
 
 define WMDATA      $2180 ; rw
 define WMADD       $2181 ; w, 24-bit
-define WMADDL      WMADD ; w
+define WMADDL      $2181 ; w
 define WMADDH      $2182 ; w
 define WMADDB      $2183 ; w
 

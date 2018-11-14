@@ -1,9 +1,10 @@
 
 #[bank(01)]
+; TODO: generate this from an image, somehow
 GFXLogo:
 	incbin "gfx_logo.bin"
 .end
-	define GFXLogoSize .end - GFXLogo
+	define GFXLogoSize .end-GFXLogo
 GFXLogoPal:
 	incbin "logo0.pal"
 	incbin "logo1.pal"
@@ -18,7 +19,7 @@ GFXLogoMap:
 
 
 GFXLevel:
-	incbin "gfx_level.bin"
+	incbin "../build/level.gfx4"
 
 GFXLevelMap:
 	incbin "map_level.bin"
