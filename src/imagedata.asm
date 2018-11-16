@@ -16,27 +16,24 @@ GFXLogoMap:
 .end
 	define GFXLogoMapSize .end-GFXLogoMap
 
+GFXBG:
+	incbin "../build/bg.gfx4"
 
+MapBG:
+	incbin "../build/bg.map"
 
 GFXLevel:
 	incbin "../build/level.gfx4"
 
-GFXLevelMap:
-	incbin "map_level.bin"
-	incbin "map_bg.bin"
-
-GFXLevelPal:
+PalLevel:
 	incbin "../build/palette.pal"
+
+GFXSprites:
+	incbin "../build/sprites.gfx4"
 
 
 BlockMappings:
-	; Fun thing: it only has 2 at the end because my hex editor threw
-	; a really fucking obscure error whenever it tried to save it to the
-	; previous filename. I'll rename it when I'm gonna be building this
-	; from a json file anyway
-	incbin "../rsutils/mappings.bin"
+	incbin "../build/grassy.bdef"
 
 ; Uncompressed for now.
-;Chunks0123:
-;	incbin "chunks0123.bin"
-incsrc "../rsutils/chunks.asm"
+incsrc "../build/chunks.asm"

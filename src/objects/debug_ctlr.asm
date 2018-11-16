@@ -14,7 +14,12 @@ ObjDebugCtlr:
 ;	LDA.w #$0100
 ;	STA.b obj_XSpeed
 ObjDebugCtlrMain:
-
+	LDA.w JOY1
+	BIT.w #JOY_Select
+	BEQ +
+	LDA.w #-$0400
+	STA.b obj_YSpeed
++
 	; Update Y position
 	LDX.b obj_YSpeed
 	CPX #$0460
@@ -121,6 +126,8 @@ ObjDebugCtlrMain:
 	LDA.w #$00FF
 	STA.b obj_OnGround
 +
+	; Camera follows this object
+	JSL CameraFollow
 
 	LDA.b obj_XPos
 	SEC : SBC.w CamX

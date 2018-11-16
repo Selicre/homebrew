@@ -4,6 +4,10 @@ define Level_CamYStart	$84
 define Level_CamXEnd		$86
 define Level_CamYEnd		$88
 define Level_SpeedM		$8A
+define Level_CamYLoadU	$90
+define Level_CamYLoadD	$92
+define Level_CamXLoadL	$94
+define Level_CamXLoadR	$96
 
 
 HexSpriteText:
@@ -89,18 +93,21 @@ Level_LoadQueue:
 	db $01
 	dl GFXLevel
 	dw $0000, $4000
-	db $00
-	dl GFXLevelPal
-	dw $0000, $0200
-	;db $00
-	;dl GFXLevelPal
-	;dw $0080, $0080
 	db $01
-	dl GFXLevelMap
-	dw $4000, $2000
+	dl GFXBG
+	dw $2000, $2000
+	db $00
+	dl PalLevel
+	dw $0000, $0200
+	db $01
+	dl MapBG
+	dw $3800, $1000
 	;db $03
 	;dl Chunk_0000_0000+18
 	;dw LevelChunks, $400
+	db $01
+	dl GFXSprites
+	dw $7800, $1000
 	db $FF
 
 #[bank(02)]
@@ -110,9 +117,9 @@ GM_LevelInit:
 	STA.w NMITIMEN
 	LDA #%10000000	; turn screen off, activate vblank
 	STA.w INIDISP
+	REP #$30
 
 	; Clean level data
-	REP #$30
 	LDA #$0000
 	LDX.w #LevelChunks>>16
 	STX $02
@@ -120,6 +127,7 @@ GM_LevelInit:
 	STX $00
 
 	JSL InitVRAMBuffers
+
 
 	LDX.w #Level_LoadQueue
 	JSL LoadDataQueue
@@ -148,33 +156,6 @@ GM_LevelInit:
 	LDA.w #$0040
 	STA $1040+obj_YPos
 
-	LDA.w #BlockMappings						; 01 02
-	STA.l LevelMeta
-	LDA.w #BlockMappings<<8|BlockMappings>>16	; 03 01
-	STA.l LevelMeta+2
-	LDA.w #BlockMappings>>8						; 01 02
-	STA.l LevelMeta+4
-	
-	LDA.w #BlockMappings						; 01 02
-	STA.l LevelMeta + LevelMetaSize
-	LDA.w #BlockMappings<<8|BlockMappings>>16	; 03 01
-	STA.l LevelMeta+2 + LevelMetaSize
-	LDA.w #BlockMappings>>8						; 01 02
-	STA.l LevelMeta+4 + LevelMetaSize
-	
-	LDA.w #BlockMappings						; 01 02
-	STA.l LevelMeta + 2*LevelMetaSize
-	LDA.w #BlockMappings<<8|BlockMappings>>16	; 03 01
-	STA.l LevelMeta+2 + 2*LevelMetaSize
-	LDA.w #BlockMappings>>8						; 01 02
-	STA.l LevelMeta+4 + 2*LevelMetaSize
-	
-	LDA.w #BlockMappings						; 01 02
-	STA.l LevelMeta + 3*LevelMetaSize
-	LDA.w #BlockMappings<<8|BlockMappings>>16	; 03 01
-	STA.l LevelMeta+2 + 3*LevelMetaSize
-	LDA.w #BlockMappings>>8						; 01 02
-	STA.l LevelMeta+4 + 3*LevelMetaSize
 	LDA #$0000
 	JSL DrawStartingTilemap
 	JSL UploadBuffer
@@ -184,18 +165,21 @@ GM_LevelInit:
 	LDA #%00000001 ; bg mode 1, 8x8 tiles
 	STA.w BGMODE
 
-	LDA #%01000001	; tilemap at 0x8000, no mirroring
+	LDA #%00110001	; tilemap at 0x6000, no mirroring
 	STA.w BG1SC
-	LDA #%01001001	; tilemap at 0x9000, no mirroring
+	LDA #%00111001	; tilemap at 0x7000, no mirroring
 	STA.w BG2SC
 	LDA #%01010001	; tilemap at 0xA000, no mirroring
 	STA.w BG3SC
+
+	LDA #%00100000
+	STA.w BG12NBA
 
 	LDA #%00010011	; enable BG1-2 + OBJ
 	STA.w TM
 	LDA #%00000011	; enable BG1-2
 	STA.w TS
-	LDA #%00000000
+	LDA #%00000111	; OBJ at 0xC000
 	STA.w OBSEL
 
 
@@ -213,11 +197,20 @@ GM_LevelInit:
 	LDA #$0000
 	STA.b Level_CamXStart
 	STA.b Level_CamYStart
+
+	LDA #$00C0
+	STA.b Level_CamXLoadL
+	LDA #$02C0
+	STA.b Level_CamXLoadR
+	LDA #$00C0
+	STA.b Level_CamYLoadU
+	LDA #$02C0
+	STA.b Level_CamYLoadD
 	JSL ScrollMgrInit
 
-	LDA #$1F00
+	LDA.w #$C00-$100
 	STA.b Level_CamXEnd
-	LDA #$1F20
+	LDA.w #$A00-$E0
 	STA.b Level_CamYEnd
 	LDA.w #GMID_Level-GamemodePtrs
 	STA.b Gamemode
@@ -290,35 +283,8 @@ GM_Level:
 	TXA
 +
 .no_debug:
-	; Follow object 0
-	LDA.w ObjectTable+obj_XPos
-	SEC : SBC #$0080
-	STA.b CamX
-	LDA.w ObjectTable+obj_YPos
-	SEC : SBC #$0080
-	STA.b CamY
+	JSL ObjectMgr
 
-	; Add camera borders
-	LDA.b CamX
-	CMP.b Level_CamXStart
-	BPL +
-	STZ.b CamX
-+
-	LDA.b CamY
-	CMP.b Level_CamYStart
-	BPL +
-	STZ.b CamY
-+
-	LDA.b Level_CamXEnd
-	CMP.b CamX
-	BPL +
-	STA.b CamX
-+
-	LDA.b Level_CamYEnd
-	CMP.b CamY
-	BPL +
-	STA.b CamY
-+
 
 ; Update BG
 	LDA.b CamX
@@ -328,16 +294,58 @@ GM_Level:
 	LSR : LSR : LSR : LSR
 	STA.b BGY
 
+	LDA.b CamX
+	CMP.b Level_CamXLoadR
+	BMI +
+	JSL LoadChunkRightward
+	BCS +
+	INC.b Level_CamXLoadR+1
+	INC.b Level_CamXLoadR+1
+	INC.b Level_CamXLoadL+1
+	INC.b Level_CamXLoadL+1
++
+	LDA.b CamX
+	CMP.b Level_CamXLoadL
+	BPL +
+	JSL LoadChunkLeftward
+	BCS +
+	DEC.b Level_CamXLoadL+1
+	DEC.b Level_CamXLoadL+1
+	DEC.b Level_CamXLoadR+1
+	DEC.b Level_CamXLoadR+1
++
+	LDA.b CamY
+	CMP.b Level_CamYLoadD
+	BMI +
+	JSL LoadChunkDownward
+	BCS +
+	INC.b Level_CamYLoadD+1
+	INC.b Level_CamYLoadD+1
+	INC.b Level_CamYLoadU+1
+	INC.b Level_CamYLoadU+1
++
+	LDA.b CamY
+	CMP.b Level_CamYLoadU
+	BPL +
+	JSL LoadChunkUpward
+	BCS +
+	DEC.b Level_CamYLoadD+1
+	DEC.b Level_CamYLoadD+1
+	DEC.b Level_CamYLoadU+1
+	DEC.b Level_CamYLoadU+1
++
 	JSL ScrollMgr
 
 
 	; Draw the HUD
 	;BRA +
 	LDA.w $1000+obj_XPos
+	;LDA.w CamX
 	LDX.w #$0028
 	LDY.w #$0010
 	JSR HexSpriteText
 	LDA.w $1000+obj_YPos
+	;LDA.w CamY
 	LDX.w #$0028
 	LDY.w #$0018
 	JSR HexSpriteText
@@ -351,19 +359,8 @@ GM_Level:
 	JSR HexSpriteText
 +
 	
-	JSL ObjectMgr
-	LDA.w JOY1
-	AND.w Joypad1Prev
-	BIT.w #JOY_L
-	BEQ +
-	;JSL LoadChunkDownward
-+
-	LDA.w JOY1
-	AND.w Joypad1Prev
-	BIT.w #JOY_R
-	BEQ +
-	JSL LoadChunkRightward
-+
+
+
 
 	LDA.w JOY1
 	EOR.w #$FFFF

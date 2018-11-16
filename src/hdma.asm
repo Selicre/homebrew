@@ -104,22 +104,22 @@ HDMASetup:
 	STY $4330	;
 	LDY.b #CGDATA
 	STY $4331
-	LDA.w #HDMAPalette	; get pointer to brightness table
+	LDA.w #HDMAPaletteDark	; get pointer to brightness table
 	STA $4332	; store it to low and high byte pointer
-	LDY.b #HDMAPalette>>16
+	LDY.b #HDMAPaletteDark>>16
 	STY $4334	; store to bank pointer byte
-	LDY.b #LCH_Rainbow_64>>16
+	LDY.b #LCH_Rainbow_Dark_64>>16
 	STY $4337
 
 	LDY #%01000010	; byte, byte, indirect
 	STY $4340	;
 	LDY.b #CGDATA
 	STY $4341
-	LDA.w #HDMAPaletteDark	; get pointer to brightness table
+	LDA.w #HDMAPalette	; get pointer to brightness table
 	STA $4342	; store it to low and high byte pointer
-	LDY.b #HDMAPaletteDark>>16
+	LDY.b #HDMAPalette>>16
 	STY $4344	; store to bank pointer byte
-	LDY.b #LCH_Rainbow_Dark_64>>16
+	LDY.b #LCH_Rainbow_64>>16
 	STY $4347
 
 	LDY #%01000010	; byte, byte, indirect

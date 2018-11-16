@@ -6,103 +6,161 @@ LoadInitialChunk:
 	LDX.w #Chunk_0020_0000
 	JSR LoadChunkTR
 	PLB
-	JMP LoadChunkDownward
+	INC.w ChunkLoaderY
+	JSL LoadChunkDownward
+	RTL
 
 
 LoadChunkDownward:
 	PHB
 	LDA.w ChunkLoaderY
-	BNE +
-	INC.w ChunkLoaderY
+	BEQ +
 	LDA.l LevelMeta+MetaDownPtr
 	CMP #$FFFF	; Should we load it?
 	BEQ ++
 	TAX
 	JSR LoadChunkBL
-++	LDA.l LevelMeta+LevelMetaSize+MetaDownPtr
+	LDA.l LevelMeta+LevelMetaSize+MetaDownPtr
 	CMP #$FFFF
 	BEQ ++
 	TAX
 	JSR LoadChunkBR
-++	PLB
+	STZ.w ChunkLoaderY
+	CLC
+	PLB
 	RTL
 +
-	STZ.w ChunkLoaderY
 	LDA.l LevelMeta+LevelMetaSize*2+MetaDownPtr
 	CMP #$FFFF
 	BEQ ++
 	TAX
 	JSR LoadChunkTL
-++	LDA.l LevelMeta+LevelMetaSize*3+MetaDownPtr
+	LDA.l LevelMeta+LevelMetaSize*3+MetaDownPtr
 	CMP #$FFFF
 	BEQ ++
 	TAX
 	JSR LoadChunkTR
-++	PLB
+	INC.w ChunkLoaderY
+	CLC
+	PLB
+	RTL
+++
+	SEC
+	PLB
 	RTL
 
 LoadChunkUpward:
 	PHB
 	LDA.w ChunkLoaderY
 	BNE +
-	INC.w ChunkLoaderY
 	LDA.l LevelMeta+MetaUpPtr
 	CMP #$FFFF	; Should we load it?
 	BEQ ++
 	TAX
 	JSR LoadChunkBL
-++	LDA.l LevelMeta+LevelMetaSize+MetaUpPtr
+	LDA.l LevelMeta+LevelMetaSize+MetaUpPtr
 	CMP #$FFFF
 	BEQ ++
 	TAX
 	JSR LoadChunkBR
-++	PLB
+	INC.w ChunkLoaderY
+	CLC
+	PLB
 	RTL
 +
-	STZ.w ChunkLoaderY
 	LDA.l LevelMeta+LevelMetaSize*2+MetaUpPtr
 	CMP #$FFFF
 	BEQ ++
 	TAX
 	JSR LoadChunkTL
-++	LDA.l LevelMeta+LevelMetaSize*3+MetaUpPtr
+	LDA.l LevelMeta+LevelMetaSize*3+MetaUpPtr
 	CMP #$FFFF
 	BEQ ++
 	TAX
 	JSR LoadChunkTR
-++	PLB
+	STZ.w ChunkLoaderY
+	CLC
+	PLB
+	RTL
+++
+	SEC
+	PLB
 	RTL
 
 LoadChunkRightward:
 	PHB
 	LDA.w ChunkLoaderX
 	BEQ +
-	INC.w ChunkLoaderX
 	LDA.l LevelMeta+MetaRightPtr
 	CMP #$FFFF	; Should we load it?
 	BEQ ++
 	TAX
-	JSR LoadChunkBR
-++	LDA.l LevelMeta+LevelMetaSize*2+MetaRightPtr
+	JSR LoadChunkTR
+	LDA.l LevelMeta+LevelMetaSize*2+MetaRightPtr
 	CMP #$FFFF
 	BEQ ++
 	TAX
-	JSR LoadChunkTR
-++	PLB
+	JSR LoadChunkBR
+	STZ.w ChunkLoaderX
+	CLC
+	PLB
 	RTL
 +
-	STZ.w ChunkLoaderX
 	LDA.l LevelMeta+LevelMetaSize*1+MetaRightPtr
 	CMP #$FFFF
 	BEQ ++
 	TAX
+	JSR LoadChunkTL
+	LDA.l LevelMeta+LevelMetaSize*3+MetaRightPtr
+	CMP #$FFFF
+	BEQ ++
+	TAX
 	JSR LoadChunkBL
-++	LDA.l LevelMeta+LevelMetaSize*3+MetaRightPtr
+	INC.w ChunkLoaderX
+	CLC
+	PLB
+	RTL
+++
+	SEC
+	PLB
+	RTL
+
+LoadChunkLeftward:
+	PHB
+	LDA.w ChunkLoaderX
+	BNE +
+	LDA.l LevelMeta+MetaLeftPtr
+	CMP #$FFFF	; Should we load it?
+	BEQ ++
+	TAX
+	JSR LoadChunkTR
+	LDA.l LevelMeta+LevelMetaSize*2+MetaLeftPtr
+	CMP #$FFFF
+	BEQ ++
+	TAX
+	JSR LoadChunkBR
+	INC.w ChunkLoaderX
+	CLC
+	PLB
+	RTL
++
+	LDA.l LevelMeta+LevelMetaSize*1+MetaLeftPtr
 	CMP #$FFFF
 	BEQ ++
 	TAX
 	JSR LoadChunkTL
-++	PLB
+	LDA.l LevelMeta+LevelMetaSize*3+MetaLeftPtr
+	CMP #$FFFF
+	BEQ ++
+	TAX
+	JSR LoadChunkBL
+	STZ.w ChunkLoaderX
+	CLC
+	PLB
+	RTL
+++
+	SEC
+	PLB
 	RTL
 
 
@@ -114,7 +172,7 @@ LoadChunkTL:
 	PLA
 	CLC : ADC.w #18
 	TAX
-	LDA.w #$0400
+	LDA.w #$03FF
 	LDY.w #LevelChunks
 	MVN #$7E,#$05
 	RTS
@@ -126,7 +184,7 @@ LoadChunkTR:
 	PLA
 	CLC : ADC.w #18
 	TAX
-	LDA.w #$0400
+	LDA.w #$03FF
 	LDY.w #LevelChunks+LevelChunkSize
 	MVN #$7E,#$05
 	RTS
@@ -138,7 +196,7 @@ LoadChunkBL:
 	PLA
 	CLC : ADC.w #18
 	TAX
-	LDA.w #$0400
+	LDA.w #$03FF
 	LDY.w #LevelChunks+LevelChunkSize*2
 	MVN #$7E,#$05
 	RTS
@@ -150,7 +208,7 @@ LoadChunkBR:
 	PLA
 	CLC : ADC.w #18
 	TAX
-	LDA.w #$0400
+	LDA.w #$03FF
 	LDY.w #LevelChunks+LevelChunkSize*3
 	MVN #$7E,#$05
 	RTS

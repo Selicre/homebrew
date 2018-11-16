@@ -6,10 +6,12 @@
 
 define obj_ID		$00		; long
 define obj_Mappings	$03		; long
-define obj_XPos		$06
-define obj_XSubpx	$08
-define obj_YPos		$0A
-define obj_YSubpx	$0C
+define obj_XSubpx	$06
+define obj_XPos		$07
+; unused byte
+define obj_YSubpx	$0A		; overlapping words
+define obj_YPos		$0B
+; unused byte
 define obj_Size		$0E
 define obj_Width	$0E		; byte
 define obj_Height	$0F		; byte
@@ -78,30 +80,83 @@ ObjYield:
 	REP #$20
 	RTL
 
+CameraFollow:
+	PHD
+	LDA 1,s
+	TAX
+	LDA.w #$0000
+	TCD
+	LDA.w obj_XPos,x
+	SEC : SBC #$0080
+	STA.b CamX
+	LDA.w obj_YPos,x
+	SEC : SBC #$0080
+	STA.b CamY
+	; Add camera borders
+	LDA.b CamX
+	CMP.b Level_CamXStart
+	BPL +
+	STZ.b CamX
++
+	LDA.b CamY
+	CMP.b Level_CamYStart
+	BPL +
+	STZ.b CamY
++
+	LDA.b Level_CamXEnd
+	CMP.b CamX
+	BPL +
+	STA.b CamX
++
+	LDA.b Level_CamYEnd
+	CMP.b CamY
+	BPL +
+	STA.b CamY
++
+	PLD
+	RTL
+
 ; Puts position after speed processing in X/Y.
 ProcessSpeed:
 	LDA.b obj_YSpeed
-	; Sign-extend
-	BPL +
-	ORA #$00FF
+	CLC : ADC.b obj_YSubpx
+	STA.w $00
+	LDA.b obj_YSpeed
+	BMI +
+	SEP #$20
+	LDA.b obj_YPos+1
+	ADC #$00
 	BRA ++
 +
-	AND #$FF00
+	SEP #$20
+	LDA.b obj_YPos+1
+	SBC #$00
 ++
-	XBA
-	CLC : ADC.b obj_YPos
-	TAY
+	STA.w $02
+	LDA.w $00
+	STA.b obj_YSubpx
+	REP #$20
+	LDY.w $01
 
 	LDA.b obj_XSpeed
-	BPL +
-	ORA #$00FF
+	CLC : ADC.b obj_XSubpx
+	STA.w $00
+	LDA.b obj_XSpeed
+	BMI +
+	SEP #$20
+	LDA.b obj_XPos+1
+	ADC #$00
 	BRA ++
 +
-	AND #$FF00
+	SEP #$20
+	LDA.b obj_XPos+1
+	SBC #$00
 ++
-	XBA
-	CLC : ADC.b obj_XPos
-	TAX
+	STA.w $02
+	LDA.w $00
+	STA.b obj_XSubpx
+	REP #$20
+	LDX.w $01
 	RTL
 
 ; Gets collision data for 4 points that surround the sprite.
@@ -257,55 +312,6 @@ SimpleLayerCollision:
 	LDA.w $0A
 	RTL
 
-
-
-; Uses four-corner collision. Does not process collision response types or slopes yet.
-; Adjusts speed.
-
-FCCollision:
-	STZ.w $00
-	LDA.b obj_XPos
-	CLC : ADC.b obj_XSpeed
-	TAX
-	LDA.b obj_YPos
-	CLC : ADC.b obj_YSpeed
-	TAY
-	JSL GetBlockAt
-	XBA
-	TSB.w $00
-	LDA.b obj_Width
-	AND.w #$00FF
-	CLC : ADC.b obj_XPos
-	CLC : ADC.b obj_XSpeed
-	TAX
-	JSL GetBlockAt
-	XBA
-	ASL
-	TSB.w $00
-	LDA.b obj_Height
-	AND.w #$00FF
-	CLC : ADC.b obj_YPos
-	CLC : ADC.b obj_YSpeed
-	TAY
-	JSL GetBlockAt
-	XBA
-	ASL : ASL : ASL
-	TSB.w $00
-	LDA.b obj_XPos
-	CLC : ADC.b obj_XSpeed
-	TAX
-	JSL GetBlockAt
-	XBA
-	ASL : ASL
-	TSB.w $00
-	STZ.w $01
-	LDA.w $00
-	ASL
-	TAX
-;	JSR (FCCTable,x)
-	RTL
-
-;incsrc "objects/fcc.asm"
 
 ; Mappings format is an array of this, 5 bytes each:
 ; 00: signed x offset (byte)

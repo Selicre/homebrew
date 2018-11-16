@@ -1,9 +1,9 @@
 
 ; Level tilemap renderer.
 ; The level layout is looped like this:
-; 12341234
-; 34123412
-; 12341234
+; 121212
+; 343434
+; 121212
 ; This allows for efficient rendering of both horizontal and vertical levels (although a separate vertical mode may be introduced).
 ; Note that just `1234` is already 25% of the original SMW level size.
 
@@ -184,7 +184,7 @@ DrawTilemapColumn:
 	BEQ +
 	EOR #$0420				; Put onto the actual second plane
 +
-	ORA.w #$4000
+	ORA.w #$3000
 	STA.w HScrollBufTarget	; Put as VRAM target
 	LDA.w #$0001			; 1 block column only for now
 	STA.w HScrollBufSize
@@ -215,7 +215,7 @@ DrawTilemapColumn:
 	STA $00					; save the chunk ID here
 	
 	LDA 4,s					; get the 512px high index
-	AND #$07
+	AND #$03
 	LSR
 	EOR $00			; get chunk ID
 	STA.b Render_ChunkInd
@@ -351,7 +351,7 @@ DrawTilemapRow:
 	STA.w Render_DataPtr	; get chunk
 	ASL
 	AND #$03C0
-	ORA #$4000
+	ORA #$3000
 	STA.w VScrollBufTarget
 	LDA #$0080				; for now, only $80 (one row) is supported
 	STA.w VScrollBufSize
@@ -376,7 +376,7 @@ DrawTilemapRow:
 	STA $00					; save the chunk ID here
 	
 	LDA.w HScrollSeam+1		; get the chunk index
-	AND #$07
+	AND #$03
 	LSR
 	EOR $00			; get chunk ID
 	STA.b Render_ChunkInd
@@ -448,8 +448,9 @@ DrawTilemapRow:
 .seam
 	SEP #$20
 	LDA.b Render_ChunkInd
-	DEC
-	AND #$03
+	;DEC
+	;AND #$03
+	EOR #$01
 	STA.b Render_ChunkInd
 	REP #$20
 	PHA
@@ -476,7 +477,7 @@ UploadBuffer:
 .queue
 	db $01
 	dl VRAMBuffer
-	dw $4000, $1000
+	dw $3000, $1000
 	db $FF
 
 InitVRAMBuffers:
@@ -585,7 +586,7 @@ GetBlockAt:
 
 	LDA 6,s					; high byte of column
 	LSR
-	AND #$03
+	AND #$01
 	EOR 2,s				; get chunk ID
 	
 	STA $005A

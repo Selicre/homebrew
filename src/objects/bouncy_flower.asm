@@ -50,7 +50,7 @@ ObjBouncyFlowerMain:
 	SEC : SBC.w CamY
 	TAY
 	;        vhppccc
-	LDA.w #(%0011000 << 9) | $18A
+	LDA.w #(%0011111 << 9) | $18C
 	SEC
 	JSL AddSpriteTile
 	RTL
