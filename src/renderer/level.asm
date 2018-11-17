@@ -571,7 +571,7 @@ UploadScrollBuffer:
 
 
 ; X/Y as pixel params, output: block ID in A, collision in B
-; Note: fairly expensive to call this one by one.
+; Note: fairly expensive to call this one by one, maybe cache things somewhere?
 
 GetBlockAt:
 	PHY
@@ -589,7 +589,7 @@ GetBlockAt:
 	AND #$01
 	EOR 2,s				; get chunk ID
 	
-	STA $005A
+	STA $0000
 	
 	ASL : ASL
 	STA 2,s
@@ -606,14 +606,41 @@ GetBlockAt:
 	CLC : ADC 3,s
 	ORA 1,s					; add chunk coords
 	TAX
-	STX $0058
 	LDA.l LevelChunks,x
 	AND #$00FF
-	BEQ +
-	ORA #$0100	; non-air block (TODO: look it up)
-+
 	PLX
 	PLY
+	PLX
+	PLY
+	RTL
+
+; Note: I'll figure out subtables later. And the caching for this as well..
+; Maybe it's gonna be way easier to use interlaced tables.
+GetSolidityAt:
+	JSL GetBlockAt
+	STA.w $06
+	PHY
+	PHX
+	PHD
+	PEA #$0000
+	PLD
+	LDA.b $00
+	AND #$00FF
+	XBA						; << 8
+	ASL						; << 1 - Basically, make X go in $200 increments
+	TAX
+	LDA.l LevelMeta+MetaBlockPtr+2,x		; Y now contains the bank
+	TAY
+	LDA.l LevelMeta+MetaBlockPtr,x		; A now contains the word pointer to main level data
+	CLC : ADC #$0400
+	STA.b $02
+	STY.b $04
+	LDA.w $06
+	ASL
+	TAY
+	LDA.b [$02],y
+	AND.w #$00FF
+	PLD
 	PLX
 	PLY
 	RTL

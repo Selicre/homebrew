@@ -6,7 +6,7 @@ fn main() {
     let mut args = std::env::args();
     args.next();
     let res = match &*args.next().unwrap() {
-        "blockdefs" => mappings(args),
+        "blockdefs" => blockdefs(args),
         "chunks" => chunks(args),
         "tilemap" => tilemap(args),
         _ => Err("tf".to_string().into())
@@ -90,7 +90,7 @@ fn tilemap(mut args: impl Iterator<Item=String>) -> Result<(),Box<Error>> {
     Ok(())
 }
 
-fn mappings(mut args: impl Iterator<Item=String>) -> Result<(),Box<Error>> {
+fn blockdefs(mut args: impl Iterator<Item=String>) -> Result<(),Box<Error>> {
     use snesgfx::from::TilemapCell;
     use std::fs::File;
     use std::io::Write;
@@ -100,10 +100,11 @@ fn mappings(mut args: impl Iterator<Item=String>) -> Result<(),Box<Error>> {
     let palette = from::Palette::from_slice(&std::fs::read(&format!("build/{}", palette))?);
     let tileset = &mappings.properties.iter().find(|c| &*c.name == "tileset").expect("tileset custom prop").value.as_str().unwrap();
     let tileset = from::Tileset::from_bitplane(4, &std::fs::read(&format!("build/{}", tileset))?);
-    let mut tiles = [vec![],vec![],vec![],vec![]];
+    let mut tiles = [vec![],vec![],vec![],vec![],vec![]];
     let mut out = image::ImageBuffer::new(128, 256);
     // T tcccttt
     let tl = if let tiled::LayerKind::TileLayer(t) = &mappings.layers[0] { t } else { return Err("layer 1 not a tile layer".to_string().into()) };
+    let solid = if let tiled::LayerKind::TileLayer(t) = &mappings.layers[1] { t } else { return Err("layer 2 not a tile layer".to_string().into()) };
     for y in 0u32..tl.data.len() as u32/32 {
         for x in 0u32..8 {
             let pos = (x*2+y*32) as usize;
@@ -127,6 +128,10 @@ fn mappings(mut args: impl Iterator<Item=String>) -> Result<(),Box<Error>> {
             imageops::overlay(&mut out, &img, x*16+8, y*16+8);
             tiles[3].push(t as u8);
             tiles[3].push((t>>8) as u8);
+            let s = solid.data[pos+16];
+            let s = if s == 0 { 0 } else { s - 4097 };  // todo: pull GIDs from the right place
+            tiles[4].push(s as u8);
+            tiles[4].push(0x00);
         }
     }
     let name = next()?;

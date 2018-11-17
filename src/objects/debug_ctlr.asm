@@ -128,7 +128,7 @@ ObjDebugCtlrMain:
 +
 	; Camera follows this object
 	JSL CameraFollow
-
+	
 	LDA.b obj_XPos
 	SEC : SBC.w CamX
 	SBC.w #$0003
@@ -137,6 +137,8 @@ ObjDebugCtlrMain:
 	SEC : SBC.w CamY
 	SBC.w #$0007
 	TAY
+	LDA.b obj_OnGround
+	BEQ .jumping
 	LDA.b obj_Anim
 	BIT.w #$0010
 	BEQ +
@@ -150,5 +152,36 @@ ObjDebugCtlrMain:
 	ORA.w #(%0010010 << 9) | $180
 	SEC
 	JSL AddSpriteTile
-
+	RTL
+.jumping
+	LDA.b obj_YSpeed
+	BMI +
+	LDA.b obj_RenderF
+	ORA.w #(%0010010 << 9) | $184
+	SEC
+	JSL AddSpriteTile
+	RTL
++
+	LDA.b obj_RenderF
+	ORA.w #(%0010010 << 9) | $186
+	SEC
+	PHA
+	PHX
+	PHY
+	JSL AddSpriteTile
+	PLY
+	TYA : CLC : ADC #$0010 : TAY
+	PLX
+	LDA.b obj_RenderF
+	BIT.w #%01000000<<8
+	BEQ +
+	TXA : CLC : ADC #$0003 : TAX
+	BRA ++
++
+	TXA : CLC : ADC #$0005 : TAX
+++
+	PLA
+	INC : INC
+	CLC
+	JSL AddSpriteTile
 	RTL

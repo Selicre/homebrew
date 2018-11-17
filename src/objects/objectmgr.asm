@@ -195,53 +195,55 @@ GetSimpleBoundingBox:
 SimpleLayerCollision:
 	; Sideways
 	JSL ProcessSpeed
-	STX.w $00
-	STY.w $02
+	STX.w $10
+	STY.w $12
+	LDA.w #$0000
+	STA.w $1E	; Processing X
 	LDA.b obj_Size
 	AND.w #$FF00
 	XBA
-	STA.w $06	; width
+	STA.w $16	; width
 	LDA.b obj_Size
 	AND.w #$00FF
-	STA.w $08	; height
-	STZ.w $0A
+	STA.w $18	; height
+	STZ.w $1A
 	LDA.b obj_XSpeed
 	BEQ .move_vertical
 	BMI .move_left
 	; Moving right
-	LDA.w $00
-	CLC : ADC.w $06
+	LDA.w $10
+	CLC : ADC.w $16
 	TAX
 	LDY.b obj_YPos
-	JSL GetBlockAt
-	STA.w $04
+	JSR .collideWith
+	STA.w $14
 	TYA
-	CLC : ADC.w $08
+	CLC : ADC.w $18
 	TAY
-	JSL GetBlockAt
-	ORA.w $04
+	JSR .collideWith
+	ORA.w $14
 	BEQ .sync_xspeed
 	; collision happened, clamp velocity
 	TXA				; target block coords
 	AND.w #$FFF0
-	SEC : SBC.w $06
+	SEC : SBC.w $16
 	DEC
 	STA.b obj_XPos
 	STZ.b obj_XSpeed
 	LDA.w #%0001
-	TSB.w $0A
+	TSB.w $1A
 	BRA .move_vertical
 .move_left
 	; Moving left
-	LDX.w $00
+	LDX.w $10
 	LDY.b obj_YPos
-	JSL GetBlockAt
-	STA.w $04
+	JSR .collideWith
+	STA.w $14
 	TYA
-	CLC : ADC.w $08
+	CLC : ADC.w $18
 	TAY
-	JSL GetBlockAt
-	ORA.w $04
+	JSR .collideWith
+	ORA.w $14
 	BEQ .sync_xspeed
 	; collision happened, clamp velocity
 	TXA				; target block coords
@@ -250,50 +252,53 @@ SimpleLayerCollision:
 	STA.b obj_XPos
 	STZ.b obj_XSpeed
 	LDA.w #%0010
-	TSB.w $0A
+	TSB.w $1A
 	BRA .move_vertical
 .sync_xspeed
-	LDA.w $00
+	LDA.w $10
 	STA.b obj_XPos
 
+
 .move_vertical
+	LDA.w #$0001
+	STA.w $1E	; Processing Y
 	LDA.b obj_YSpeed
 	BEQ .end
 	BMI .move_up
 	; Moving down
-	LDA.w $02
-	CLC : ADC.w $08
+	LDA.w $12
+	CLC : ADC.w $18
 	TAY
 	LDX.b obj_XPos
-	JSL GetBlockAt
-	STA.w $04
+	JSR .collideWith
+	STA.w $14
 	TXA
-	CLC : ADC.w $06
+	CLC : ADC.w $16
 	TAX
-	JSL GetBlockAt
-	ORA.w $04
+	JSR .collideWith
+	ORA.w $14
 	BEQ .sync_yspeed
 	; collision happened, clamp velocity
 	TYA				; target block coords
 	AND.w #$FFF0
-	SEC : SBC.w $08
+	SEC : SBC.w $18
 	DEC
 	STA.b obj_YPos
 	STZ.b obj_YSpeed
 	LDA.w #%0100
-	TSB.w $0A
+	TSB.w $1A
 	BRA .end
 .move_up
 	; Moving up
 	LDX.b obj_XPos
-	LDY.w $02
-	JSL GetBlockAt
-	STA.w $04
+	LDY.w $12
+	JSR .collideWith
+	STA.w $14
 	TXA
-	CLC : ADC.w $06
+	CLC : ADC.w $16
 	TAX
-	JSL GetBlockAt
-	ORA.w $04
+	JSR .collideWith
+	ORA.w $14
 	BEQ .sync_yspeed
 	; collision happened, clamp velocity
 	TYA				; target block coords
@@ -302,15 +307,60 @@ SimpleLayerCollision:
 	STA.b obj_YPos
 	STZ.b obj_YSpeed
 	LDA.w #%1000
-	TSB.w $0A
+	TSB.w $1A
 	BRA .end
 .sync_yspeed
 	; TODO
-	LDA.w $02
+	LDA.w $12
 	STA.b obj_YPos
 .end
-	LDA.w $0A
+	LDA.w $1A
 	RTL
+
+.collideWith
+	PHX
+	JSL GetSolidityAt
+	CMP #$0003
+	BMI +
+	LDA #$0000
++
+	ASL
+	TAX
+	JMP (.colliders,x)
+.colliders
+	dw .collide00
+	dw .collide01
+	dw .collide02
+.collide00		; Always air
+	PLX
+	LDA #$0000
+	RTS
+.collide01		; Always solid
+	PLX
+	LDA #$0001
+	RTS
+.collide02		; Ledge
+	PLX
+	LDA.w $1E			; Is the Y movement tested?
+	BEQ +
+	LDA.b obj_YSpeed	; Is the downward momentum tested?
+	BMI +
+	STA.w $50
+	TYA
+	AND.w #$FFF0
+	STA.w $00
+	LDA.b obj_YPos
+	CLC : ADC.w $18		; height
+	AND.w #$FFF0
+	SEC : SBC.w $00
+	STA.w $50
+	BPL +
+	LDA #$0001
+	BRA ++
++
+	LDA #$0000
+++
+	RTS
 
 
 ; Mappings format is an array of this, 5 bytes each:
