@@ -166,8 +166,6 @@ Render_UpdatePtrs:
 ; Horizontal scrolling routine
 ; A is the column offset.
 
-; Costs 19666 cycles when changing chunks, 18138 when not.
-
 DrawTilemapColumn:
 	PHB
 
@@ -334,8 +332,6 @@ DrawTilemapColumn:
 ; Vertical scrolling routine
 ; Put the camera offset to redraw in A (should be divisible by $10) - e.g. $F0 for scrolling downward.
 ; TODO: optimize it to where it only draws the visible part.
-
-; Costs 33470 cycles.
 
 DrawTilemapRow:
 	; Set the DBR to the RAM
@@ -574,7 +570,7 @@ UploadScrollBuffer:
 ; Note: fairly expensive to call this one by one, maybe cache things somewhere?
 
 GetBlockAt:
-	PHY
+	PHY			; TODO: unfuck this
 	PHX
 	PHY
 	LDA #$0000				; clear top of A
@@ -614,6 +610,63 @@ GetBlockAt:
 	PLY
 	RTL
 
+; TODO: Only write to VRAM if the block is rendered.
+SetBlockAt:
+	PHY
+	PHA
+	PHX
+	PHY
+	LDA #$0000				; clear top of A
+	SEP #$20				; A 8-bit
+	LDA 2,s					; high byte of row
+	AND #$02				; get the current chunk index
+	PEA $0000
+	STA 2,s					; save the partial chunk ID here
+
+	LDA 6,s					; high byte of column
+	LSR
+	AND #$01
+	EOR 2,s				; get chunk ID
+	
+	STA $0000
+	
+	ASL : ASL
+	STA 2,s
+	REP #$20
+
+	LDA 3,s					; row
+	AND #$1F0
+	ASL						; get Y block offset
+	STA 3,s					; todo: maybe try to do it without this?
+
+	LDA 5,s					; column
+	LSR : LSR : LSR : LSR
+	AND #$001F				; clamp to chunk
+	CLC : ADC 3,s
+	ORA 1,s					; add chunk coords
+	TAX
+	SEP #$20
+	LDA 7,s
+	STA.l LevelChunks,x
+	REP #$20
+	PLX
+	PLY
+	PLX
+	PLA
+	PLY
+	PHX
+	PHY
+	PHD
+	LDA #$0000
+	TCD
+	TXA
+	JSL DrawTilemapColumn
+	PLD
+	PLY
+	PLX
+	RTL
+
+
 ; Note: I'll figure out subtables later. And the caching for this as well..
 ; Maybe it's gonna be way easier to use interlaced tables.
 GetSolidityAt:
@@ -644,3 +697,4 @@ GetSolidityAt:
 	PLX
 	PLY
 	RTL
+

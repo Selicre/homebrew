@@ -320,7 +320,7 @@ SimpleLayerCollision:
 .collideWith
 	PHX
 	JSL GetSolidityAt
-	CMP #$0003
+	CMP #$0004
 	BMI +
 	LDA #$0000
 +
@@ -331,6 +331,7 @@ SimpleLayerCollision:
 	dw .collide00
 	dw .collide01
 	dw .collide02
+	dw .collide03
 .collide00		; Always air
 	PLX
 	LDA #$0000
@@ -360,6 +361,19 @@ SimpleLayerCollision:
 +
 	LDA #$0000
 ++
+	RTS
+.collide03		; spinny block
+	LDA.w $1E			; Is the Y movement tested?
+	BEQ +
+	LDA.b obj_YSpeed	; Is the upward momentum tested?
+	BPL +
+	LDA 1,s
+	TAX
+	LDA #$0000
+	JSL SetBlockAt
++
+	LDA #$0001
+	PLX
 	RTS
 
 
