@@ -15,4 +15,4 @@ The chunk format is one byte per block, with metadata, which contains two pointe
 
 ## Editing
 
-
+Levels are stored in the Tiled JSON format. Reloading the graphics and palette is up to the engine as of right now, but in the future it can be done using triggers within the chunk. The build script will automatically determine which block mappings to use, and in the future it would even be able to automatically generate block mappings from a single big set.
