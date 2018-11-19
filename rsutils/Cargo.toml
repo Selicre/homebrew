@@ -5,6 +5,6 @@ authors = ["x10A94 <hyperpone@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-snesgfx = { path = "../../Rust/snesgfx" }
-tiled = { path = "../../Rust/tiled" }
+snesgfx = { path = "../deps/snesgfx" }
+tiled = { path = "../deps/tiled" }
 image = "0.20"

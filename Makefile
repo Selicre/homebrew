@@ -1,6 +1,6 @@
 
-ASM=/home/x10a94/Projects/Rust/piped-asm/target/release/piped
-SNESGFX=/home/x10a94/Projects/Rust/snesgfx/target/release/rsgfx
+ASM=deps/piped-asm/target/release/piped
+SNESGFX=deps/snesgfx/target/release/rsgfx
 
 PALGEN=$(SNESGFX) pal
 GFX2GEN=$(SNESGFX) gfx2
@@ -23,7 +23,7 @@ WORLDMAP=worldmap.json
 
 $(OUTPUT): $(PAL_FILES) $(GFX4_FILES) $(BDEF_FILES) $(TMAP_FILES) build/chunks.asm $(SOURCE)
 	cd src; \
-	$(ASM) main.asm ../$(OUTPUT)
+	../$(ASM) main.asm ../$(OUTPUT)
 
 build/chunks.asm: worldmap.json
 	$(RSUTILS) chunks $< $@
