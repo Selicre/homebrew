@@ -75,8 +75,10 @@ Marker:
 	BPL +++
 	EOR.w #$FFFF : INC
 +++
-	AND.w #$FF00
+	AND.w #$FF80
 	XBA
+	ASL
+	ADC #$0000
 	ASL
 	TAX
 	LDA.l Physics_JumpTable,x
