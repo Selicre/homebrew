@@ -4,10 +4,20 @@ This is a small SNES game base. It has an embedded tilemap renderer, sprite syst
 
 # Building
 
-To build this, you'll need [snesgfx](https://hyper.is-a.cat/gogs/x10A94/snesgfx/), [tiled](https://hyper.is-a.cat/gogs/x10A94/tiled/) and [piped-asm](https://github.com/x10A94/piped-asm). You'll need to modify the Makefile and the rsutils' manifest to adjust where they are on your system.
+## Linux
 
-To just build the output ROM, use `mkdir build; make`.
-To make intermediate files for editing in Tiled, use `mkdir build; make render_tiles; make render_blockdefs`.
+To build this, you'll need [snesgfx](https://hyper.is-a.cat/gogs/x10A94/snesgfx/), [tiled](https://hyper.is-a.cat/gogs/x10A94/tiled/) and [piped-asm](https://github.com/x10A94/piped-asm). All of this can be downloaded by running the `./update_deps.sh` script.
+
+To just build the output ROM, use `make`.
+To make intermediate files for editing in Tiled, use `make render_tiles; make render_blockdefs`.
+
+tl;dr: `./update_deps.sh && make`
+
+## Windows
+
+Good luck!
+
+# Engine info
 
 ## Tilemap renderer
 
