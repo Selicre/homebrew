@@ -29,13 +29,14 @@ mkdir -p build
 
 info "Testing system dependancies.."
 test_for_exec git
-test_for_exec cargo
 test_for_exec rustup
+test_for_exec cargo
+
 echo "Testing for nightly Rust toolchain.."
 rustup show | grep "nightly" >/dev/null || yikes "You don't have to seem the nightly toolchain for rust installed, which is required to build piped-asm. Please install it using \`rustup toolchain install nightly\`." 2
 rustup override set nightly
 
-info "Updating dependancies.."
+info "Updating dependencies.."
 (
 cd deps
 update_repo https://hyper.is-a.cat/gogs/x10A94/snesgfx snesgfx
