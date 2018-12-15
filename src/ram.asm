@@ -11,8 +11,12 @@ define SysLoadLo		$0032		; last frame's H position
 define Gamemode			$0040		; Gamemode routine ID
 define GameRunning		$0042		; Currently processing gamemode flag
 
-define VBlankPtr		$007C		; Note: you might want to set RunFrame_VBlank instead
-define IRQPtr			$007E
+#[nmi]
+define NMIVector		$0078		; Is set to RTI when not in use
+define NMIPtr			$0079
+#[irq]
+define IRQVector		$007C		; Both are 4 bytes you can use for whatever instruction (RTI or JSL)
+define IRQPtr			$007D
 
 ; $0080-$00FF: gamemode-specific
 
@@ -42,7 +46,6 @@ define SprInputLastPtr	$0526		; Last frame's LoOAM length
 define Fade_Target		$0F00
 define Fade_Source		$0F02		; Fadeout only
 define Fade_Timer		$0F04
-define RunFrame_VBlank	$0F06		; The _actual_ VBlank routine pointer that must end in a JMP MainLoop
 
 define HScrollSeam		$0F10		; Horizontal scrolling loading seam (CamX - 4 of the previous frame)
 define VScrollSeam		$0F12		; Vertical scrolling loading seam (CamY - 1 of the previous frame)

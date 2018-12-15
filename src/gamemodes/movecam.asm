@@ -86,7 +86,7 @@ VBlank_SyncCameraValues:
 VBlank_DoNothing:
 	REP #$30
 	PLA : PLA
-	JMP MainLoop
+	JMP RunFrame
 
 ; is also in bank 0 because why not
 Level_LoadQueue:
@@ -215,7 +215,7 @@ GM_LevelInit:
 	LDA.w #GMID_Level-GamemodePtrs
 	STA.b Gamemode
 	LDA.w #VBlank_SyncCameraValues
-	STA.w RunFrame_VBlank
+	STA.w NMIPtr
 	JMP FadeinInit
 
 GM_Level:

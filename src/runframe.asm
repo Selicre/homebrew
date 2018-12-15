@@ -7,16 +7,20 @@
 
 #[bank(00)]
 RunFrame:
+	SEP #$30	; AXY 8-bit
+	LDA.b #$40	; RTI
+	STA.b NMIVector
 	REP #$30	; AXY 16-bit
-	LDA.w #VBlank_DoNothingRTI
-	STA.b VBlankPtr
 	JSR ResetSprites
 	JSL RunFrameTrampoline
 	JSR FillSpritesEnd
 	JSL ScanlineProfiler
-	LDA.w RunFrame_VBlank
-	STA.b VBlankPtr
-	RTS
+	SEP #$30	; AXY 8-bit
+	LDA.b #$5C	; JML
+	STA.b NMIVector
+	; loop infinitely to wait for interrupts
+-	WAI
+	BRA -
 
 
 

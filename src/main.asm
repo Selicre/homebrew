@@ -47,12 +47,15 @@ RealStart:
 	JSR InitSprites
 	JSR ResetSprites
 
-	LDA.w #VBlank_DoNothingRTI
-	STA.b VBlankPtr
-	STA.b IRQPtr
+	LDA.w #$0040			; RTI
+	STA.b NMIVector
+	STA.b IRQVector
+	LDA.w #$8000			; bank $80
+	STA.b NMIVector+2
+	STA.b IRQVector+2
 
 	LDA.w #VBlank_DoNothing
-	STA.w RunFrame_VBlank
+	STA.w NMIPtr
 
 	SEP #$30
 	LDA #%00001111	; end vblank, setting brightness to 15
@@ -61,30 +64,14 @@ RealStart:
 	LDA #%10100001	; enable NMI, IRQ & joypad
 	STA.w NMITIMEN
 
-MainLoop:
-	REP #$30
-	JSR RunFrame
-
-; loop infinitely
--	WAI
-	BRA -
-
-VBlank_DoNothingRTI:
-	RTI
-
-#[nmi]
-VBlank:
-	JML RealVBlank
-RealVBlank:
-	JMP (VBlankPtr)
-
+	JMP RunFrame
 
 ; IRQ handler
 
-#[irq]
-IRQ:
-	CMP $4211	; Dummy read
-	JMP (IRQPtr)
+;#[irq]
+;IRQ:
+;	CMP $4211	; Dummy read
+;	JMP (IRQPtr)
 
 ; DMA queue
 ; Loads a queue from the first bank. Uses the accumulator as the data pointer.
