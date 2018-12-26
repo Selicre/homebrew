@@ -32,8 +32,10 @@ GFXSprites:
 	incbin "../build/sprites.gfx4"
 
 
-BlockMappings:
+BlockMappingsGrassy:
 	incbin "../build/grassy.bdef"
 
+BlockMappingsCave:
+	incbin "../build/cave.bdef"
 ; Uncompressed for now.
 incsrc "../build/chunks.asm"

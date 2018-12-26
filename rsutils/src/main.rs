@@ -44,7 +44,7 @@ fn chunks(mut args: impl Iterator<Item=String>) -> Result<(),Box<Error>> {
                 "$FFFFFF".to_string()
             }
         };
-        write!(out, "dl BlockMappings, BlockMappings, {}, {}, {}, {}\ndb ", d(x,y.wrapping_sub(32)), d(x,y+32), d(x.wrapping_sub(32),y), d(x+32,y))?;
+        write!(out, "dl BlockMappingsGrassy, BlockMappingsCave, {}, {}, {}, {}\ndb ", d(x,y.wrapping_sub(32)), d(x,y+32), d(x.wrapping_sub(32),y), d(x+32,y))?;
         // uncompressed for now
         for i in v {
             write!(out, "${:02X},", i)?;

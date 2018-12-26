@@ -4,8 +4,6 @@
 ; 121212
 ; 343434
 ; 121212
-; This allows for efficient rendering of both horizontal and vertical levels (although a separate vertical mode may be introduced).
-; Note that just `1234` is already 25% of the original SMW level size.
 
 define Render_Tile		$00		; Current tile index (16-bit)
 define Render_TileX		$00		; Current x tile index
@@ -290,7 +288,7 @@ DrawTilemapColumn:
 	LDA.b (Render_BlkPtrS6),y
 	STA.l $7E0042,x
 	LDA.b Render_DataPtr
-	ADC.w #$0020
+	CLC : ADC.w #$0020
 	STA.b Render_DataPtr
 	TXA : ADC.w #$0004 : TAX
 	DEC.b Render_Tile
@@ -430,7 +428,7 @@ DrawTilemapRow:
 	LDA.b (Render_BlkPtrS6),y
 	STA.l $7E0042,x
 	INC.b Render_DataPtr
-	TXA : ADC #$0004 : TAX
+	TXA : CLC : ADC #$0004 : TAX
 	DEC.b Render_Tile
 	BRA .tile_loop
 .end
@@ -670,13 +668,18 @@ SetBlockAt:
 ; Note: I'll figure out subtables later. And the caching for this as well..
 ; Maybe it's gonna be way easier to use interlaced tables.
 GetSolidityAt:
-	JSL GetBlockAt
-	STA.w $06
 	PHY
 	PHX
 	PHD
 	PEA #$0000
 	PLD
+	JSL GetBlockAt
+	STA.w $06
+	SEP #$20
+	LDA.w $06
+	BMI .use_subtable
+	REP #$20
+	STA.w $58
 	LDA.b $00
 	AND #$00FF
 	XBA						; << 8
@@ -686,9 +689,23 @@ GetSolidityAt:
 	TAY
 	LDA.l LevelMeta+MetaBlockPtr,x		; A now contains the word pointer to main level data
 	CLC : ADC #$0400
+	BRA .end
+.use_subtable
+	REP #$20
+	LDA.b $00
+	AND #$00FF
+	XBA						; << 8
+	ASL						; << 1 - Basically, make X go in $200 increments
+	TAX
+	LDA.l LevelMeta+MetaSubBlockPtr+2,x		; Y now contains the bank
+	TAY
+	LDA.l LevelMeta+MetaSubBlockPtr,x		; A now contains the word pointer to main level data
+	CLC : ADC #$0400
+.end
 	STA.b $02
 	STY.b $04
 	LDA.w $06
+	AND.w #$007F
 	ASL
 	TAY
 	LDA.b [$02],y
